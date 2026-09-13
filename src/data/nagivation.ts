@@ -4,6 +4,8 @@ import {
   Users,
   Forward,
   UserRound,
+  UserGroup,
+  FolderTree,
 } from "lucide-react";
 
 import type { UserRole } from "@/types/user";
@@ -13,7 +15,7 @@ export const navigation: Record<UserRole, NavigationItem[]> = {
   admin: [
     {
       title: "Overview",
-      url: "/dashboard",
+      url: "/admin",
       icon: LayoutDashboard,
     },
     {
@@ -24,14 +26,20 @@ export const navigation: Record<UserRole, NavigationItem[]> = {
     {
       title: "Teams",
       url: "/teams",
-      icon: Users,
+      icon: UserGroup,
     },
+    {
+      title: "Categories",
+      url: "/category",
+      icon: FolderTree,
+    },
+
   ],
 
   dispatcher: [
     {
       title: "Overview",
-      url: "/dashboard",
+      url: "/dispatcher",
       icon: LayoutDashboard,
     },
     {
@@ -54,7 +62,7 @@ export const navigation: Record<UserRole, NavigationItem[]> = {
   staff: [
     {
       title: "Overview",
-      url: "/dashboard",
+      url: "/staff",
       icon: LayoutDashboard,
     },
     {
@@ -67,7 +75,7 @@ export const navigation: Record<UserRole, NavigationItem[]> = {
   agent: [
     {
       title: "Overview",
-      url: "/dashboard",
+      url: "/agent",
       icon: LayoutDashboard,
     },
     {

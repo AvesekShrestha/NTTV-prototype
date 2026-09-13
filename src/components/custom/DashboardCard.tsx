@@ -1,17 +1,22 @@
-import { Card, CardContent } from "../ui/card";
+import type { LucideIcon } from "lucide-react";
 
-const DashboardCard = ({ title, count }: { title: string, count: number }) => {
+interface DashboardCardProps {
+  title: string,
+  value: number,
+  icon: LucideIcon
+}
+
+const DashboardCard = ({ title, value, icon: Icon }: DashboardCardProps) => {
   return (
-    <Card>
-      <CardContent>
-        <div className="flex flex-col justify-center items-center w-125 h-18">
-          <span className=" font-bold">{title}</span>
-          <span className="font-bold text-3xl">{count}</span>
-
-        </div>
-
-      </CardContent>
-    </Card>
+    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+      <div>
+        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{title}</p>
+        <h3 className="text-2xl font-bold text-slate-900 mt-1">{value}</h3>
+      </div>
+      <div className="p-3 bg-slate-100 rounded-lg text-slate-600">
+        <Icon className="w-5 h-5" />
+      </div>
+    </div>
   )
 }
 

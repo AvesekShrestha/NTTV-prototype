@@ -1,21 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Button } from "../ui/button";
+import { Forward } from "lucide-react";
+import Searchbar from "./Searchbar";
+import { DataTable, type Column } from "./DataTable";
 
 type Ticket = {
   id: number;
@@ -25,66 +12,112 @@ type Ticket = {
   assignedTo: string;
 };
 
-const tickets: Ticket[] = [
-  {
-    id: 1001,
-    title: "Internet connection not working",
-    category: "Internet",
-    priority: "High",
-    assignedTo: "Ram Shrestha",
-  },
-  {
-    id: 1002,
-    title: "IPTV channels unavailable",
-    category: "IPTV",
-    priority: "Critical",
-    assignedTo: "Unassigned",
-  },
-  {
-    id: 1003,
-    title: "Slow internet connection",
-    category: "Internet",
-    priority: "Medium",
-    assignedTo: "Sita Thapa",
-  },
-  {
-    id: 1004,
-    title: "Router configuration issue",
-    category: "Internet",
-    priority: "Low",
-    assignedTo: "Unassigned",
-  },
-  {
-    id: 1005,
-    title: "IPTV signal problem",
-    category: "IPTV",
-    priority: "High",
-    assignedTo: "Hari Gurung",
-  },
-  {
-    id: 1006,
-    title: "Internet speed issue",
-    category: "Internet",
-    priority: "Critical",
-    assignedTo: "Unassigned",
-  },
-  {
-    id: 1007,
-    title: "IPTV remote not working",
-    category: "IPTV",
-    priority: "Medium",
-    assignedTo: "Sita Thapa",
-  },
-  {
-    id: 1008,
-    title: "Router replacement request",
-    category: "Internet",
-    priority: "Low",
-    assignedTo: "Unassigned",
-  },
+const tickets: Ticket[] = [{
+  id: 1001,
+  title: "Internet connection not working",
+  category: "Internet",
+  priority: "High",
+  assignedTo: "Ram Shrestha",
+},
+{
+  id: 1002,
+  title: "IPTV channels unavailable after update",
+  category: "IPTV",
+  priority: "Critical",
+  assignedTo: "Unassigned",
+},
+{
+  id: 1003,
+  title: "Slow internet speed during peak hours",
+  category: "Internet",
+  priority: "Medium",
+  assignedTo: "Sita Thapa",
+},
+{
+  id: 1004,
+  title: "Dual-band router setup assistance",
+  category: "Internet",
+  priority: "Low",
+  assignedTo: "Unassigned",
+},
+{
+  id: 1005,
+  title: "Set-top box audio distortion on HD channels",
+  category: "IPTV",
+  priority: "High",
+  assignedTo: "Hari Gurung",
+},
+{
+  id: 1006,
+  title: "Optical Fiber cable cut reported in Subidhanagar",
+  category: "Infrastructure",
+  priority: "Critical",
+  assignedTo: "Subash Tamang",
+},
+{
+  id: 1007,
+  title: "IPTV remote replacement request",
+  category: "IPTV",
+  priority: "Medium",
+  assignedTo: "Sita Thapa",
+},
+{
+  id: 1008,
+  title: "ONU Device replacement request",
+  category: "Hardware",
+  priority: "Low",
+  assignedTo: "Unassigned",
+},
+{
+  id: 1009,
+  title: "Billing dispute for static IP package",
+  category: "Billing",
+  priority: "Medium",
+  assignedTo: "Aayush Maharjan",
+},
+{
+  id: 1010,
+  title: "Frequent Wi-Fi packet loss & latency spikes",
+  category: "Internet",
+  priority: "High",
+  assignedTo: "Ram Shrestha",
+},
+{
+  id: 1011,
+  title: "Customer portal login authentication failure",
+  category: "Account",
+  priority: "Low",
+  assignedTo: "Unassigned",
+},
+{
+  id: 1012,
+  title: "Corporate leased line downtime",
+  category: "Infrastructure",
+  priority: "Critical",
+  assignedTo: "Hari Gurung",
+},
+{
+  id: 1013,
+  title: "Static IP configuration request for CCTV DVR",
+  category: "Network",
+  priority: "Medium",
+  assignedTo: "Subash Tamang",
+},
+{
+  id: 1014,
+  title: "Secondary IPTV connection activation",
+  category: "IPTV",
+  priority: "Low",
+  assignedTo: "Unassigned",
+},
+{
+  id: 1015,
+  title: "Payment gateway timeout on online renewal",
+  category: "Billing",
+  priority: "High",
+  assignedTo: "Aayush Maharjan",
+},
 ];
-
-const ITEMS_PER_PAGE = 4;
 
 const priorityOrder: Record<Ticket["priority"], number> = {
   Critical: 1,
@@ -93,12 +126,23 @@ const priorityOrder: Record<Ticket["priority"], number> = {
   Low: 4,
 };
 
+const priorityBadgeStyles: Record<Ticket["priority"], string> = {
+  Critical: "bg-rose-50 text-rose-700 border border-rose-200/60",
+  High: "bg-amber-50 text-amber-700 border border-amber-200/60",
+  Medium: "bg-blue-50 text-blue-700 border border-blue-200/60",
+  Low: "bg-slate-100 text-slate-600 border border-slate-200/60",
+};
+
 const TicketTable = () => {
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredTickets = tickets.filter((ticket) => {
+    const matchesSearch = ticket.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+
     const matchesPriority =
       priorityFilter === "all" ||
       ticket.priority.toLowerCase() === priorityFilter;
@@ -107,34 +151,16 @@ const TicketTable = () => {
       categoryFilter === "all" ||
       ticket.category.toLowerCase() === categoryFilter;
 
-    return matchesPriority && matchesCategory;
+    return matchesSearch && matchesPriority && matchesCategory;
   });
 
   const sortedTickets = [...filteredTickets].sort((a, b) => {
     const priorityDifference =
       priorityOrder[a.priority] - priorityOrder[b.priority];
-
-    if (priorityDifference !== 0) {
-      return priorityDifference;
-    }
-
-    return a.category.localeCompare(b.category);
+    return priorityDifference !== 0
+      ? priorityDifference
+      : a.category.localeCompare(b.category);
   });
-
-  const totalPages = Math.ceil(
-    sortedTickets.length / ITEMS_PER_PAGE
-  );
-
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-
-  const paginatedTickets = sortedTickets.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE
-  );
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [priorityFilter, categoryFilter]);
 
   const handleForward = (
     event: React.MouseEvent<HTMLButtonElement>,
@@ -142,212 +168,120 @@ const TicketTable = () => {
   ) => {
     event.preventDefault();
     event.stopPropagation();
-
     console.log("Forward ticket:", ticketId);
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <Select
-          value={priorityFilter}
-          onValueChange={(value) =>
-            setPriorityFilter(value ?? "all")
-          }
+  // Define Column Specifications
+  const columns: Column<Ticket>[] = [
+    {
+      header: "Ticket ID",
+      className: "font-mono text-xs text-slate-500",
+      cell: (ticket) => (
+        <Link
+          to={`/tickets/${ticket.id}`}
+          className="hover:text-slate-900 transition-colors"
         >
-          <SelectTrigger className="w-45">
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-
-          <SelectContent>
-            <SelectItem value="all">All priorities</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={categoryFilter}
-          onValueChange={(value) =>
-            setCategoryFilter(value ?? "all")
-          }
+          #{ticket.id}
+        </Link>
+      ),
+    },
+    {
+      header: "Title",
+      className: "font-medium text-slate-900",
+      cell: (ticket) => (
+        <Link
+          to={`/tickets/${ticket.id}`}
+          className="hover:text-blue-600 transition-colors"
         >
-          <SelectTrigger className="w-45">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            <SelectItem value="internet">Internet</SelectItem>
-            <SelectItem value="iptv">IPTV</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ticket ID</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead>Assigned</TableHead>
-              <TableHead className="text-right">
-                Action
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {paginatedTickets.length > 0 ? (
-              paginatedTickets.map((ticket) => (
-                <TableRow
-                  key={ticket.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                >
-                  <TableCell>
-                    <Link
-                      to={`/tickets/${ticket.id}`}
-                      className="block font-medium"
-                    >
-                      #{ticket.id}
-                    </Link>
-                  </TableCell>
-
-                  <TableCell>
-                    <Link
-                      to={`/tickets/${ticket.id}`}
-                      className="block"
-                    >
-                      {ticket.title}
-                    </Link>
-                  </TableCell>
-
-                  <TableCell>
-                    <Link
-                      to={`/tickets/${ticket.id}`}
-                      className="block"
-                    >
-                      {ticket.category}
-                    </Link>
-                  </TableCell>
-
-                  <TableCell>
-                    <Link
-                      to={`/tickets/${ticket.id}`}
-                      className="block"
-                    >
-                      <span
-                        className={
-                          ticket.priority === "Critical"
-                            ? "font-semibold text-destructive"
-                            : ticket.priority === "High"
-                              ? "font-semibold"
-                              : ""
-                        }
-                      >
-                        {ticket.priority}
-                      </span>
-                    </Link>
-                  </TableCell>
-
-                  <TableCell>
-                    <Link
-                      to={`/tickets/${ticket.id}`}
-                      className="block"
-                    >
-                      {ticket.assignedTo}
-                    </Link>
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(event) =>
-                        handleForward(event, ticket.id)
-                      }
-                    >
-                      Forward
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="h-24 text-center"
-                >
-                  No tickets found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {startIndex + 1}–
-            {Math.min(
-              startIndex + ITEMS_PER_PAGE,
-              sortedTickets.length
-            )}{" "}
-            of {sortedTickets.length}
-          </p>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() =>
-                setCurrentPage((page) => page - 1)
-              }
-            >
-              Previous
-            </Button>
-
-            {Array.from(
-              { length: totalPages },
-              (_, index) => index + 1
-            ).map((page) => (
-              <Button
-                key={page}
-                size="sm"
-                variant={
-                  currentPage === page
-                    ? "default"
-                    : "outline"
-                }
-                onClick={() => setCurrentPage(page)}
-              >
-                {page}
-              </Button>
-            ))}
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((page) => page + 1)
-              }
-            >
-              Next
-            </Button>
-          </div>
+          {ticket.title}
+        </Link>
+      ),
+    },
+    {
+      header: "Category",
+      cell: (ticket) => (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200/50">
+          {ticket.category}
+        </span>
+      ),
+    },
+    {
+      header: "Priority",
+      cell: (ticket) => (
+        <span
+          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${priorityBadgeStyles[ticket.priority]
+            }`}
+        >
+          {ticket.priority}
+        </span>
+      ),
+    },
+    {
+      header: "Assigned",
+      cell: (ticket) =>
+        ticket.assignedTo === "Unassigned" ? (
+          <span className="text-slate-400 text-xs font-normal">Unassigned</span>
+        ) : (
+          ticket.assignedTo
+        ),
+    },
+    {
+      header: "Actions",
+      className: "text-right",
+      cell: (ticket) => (
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={(e) => handleForward(e, ticket.id)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors border border-slate-200"
+            title="Forward Ticket"
+          >
+            <Forward className="w-3.5 h-3.5 text-slate-500" />
+            Forward
+          </button>
         </div>
-      )}
-    </div>
+      ),
+    },
+  ];
+
+  return (
+    <DataTable
+      data={sortedTickets}
+      columns={columns}
+      keyExtractor={(ticket) => ticket.id}
+      itemsPerPage={4}
+      emptyMessage="No tickets found matching your criteria."
+      toolbar={
+        <Searchbar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search Tickets..."
+          filters={[
+            {
+              key: "priority",
+              value: priorityFilter,
+              onChange: setPriorityFilter,
+              options: [
+                { label: "Priority", value: "all" },
+                { label: "Critical", value: "critical" },
+                { label: "High", value: "high" },
+                { label: "Medium", value: "medium" },
+                { label: "Low", value: "low" },
+              ],
+            },
+            {
+              key: "category",
+              value: categoryFilter,
+              onChange: setCategoryFilter,
+              options: [
+                { label: "Category", value: "all" },
+                { label: "IPTV", value: "iptv" },
+                { label: "Internet", value: "internet" },
+              ],
+            },
+          ]}
+        />
+      }
+    />
   );
 };
 

@@ -7,4 +7,5 @@ export type User = {
   password: string,
   level?: AgentLevel,
   role: UserRole,
+  team?: string
 }
