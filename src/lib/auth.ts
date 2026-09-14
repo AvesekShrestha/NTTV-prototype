@@ -35,9 +35,6 @@ export const logout = () => {
 export type RegisterInput = {
   username: string,
   password: string,
-  fullName: string,
-  email: string,
-  phone: string,
 }
 
 export type RegisterResult =
@@ -66,9 +63,6 @@ export const register = (input: RegisterInput): RegisterResult => {
     username,
     password: input.password,
     role: "customer",
-    fullName: input.fullName.trim(),
-    email: input.email.trim(),
-    phone: input.phone.trim(),
   };
 
   addUser(newUser);

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import {
   Bug,
@@ -60,10 +61,16 @@ const PRIORITIES: PriorityOption[] = [
   { id: 'urgent', label: 'Urgent', badge: 'bg-rose-50 text-rose-700 border-rose-200' },
 ];
 
-const STEPS = [
+const STEPS_STAFF = [
   { id: 1, title: 'Category & Priority', subtitle: 'Select inquiry scope' },
   { id: 2, title: 'Details & Context', subtitle: 'Fill in ticket information' },
   { id: 3, title: 'Review & Submit', subtitle: 'Confirm before creating ticket' },
+];
+
+const STEPS_CUSTOMER = [
+  { id: 1, title: 'Category & Priority', subtitle: 'Tell us what this is about' },
+  { id: 2, title: 'Details & Attachments', subtitle: 'Describe the issue' },
+  { id: 3, title: 'Review & Submit', subtitle: 'Confirm before submitting your complaint' },
 ];
 
 const PRIORITY_MAP: Record<PriorityId, TicketPriority> = {
@@ -73,7 +80,66 @@ const PRIORITY_MAP: Record<PriorityId, TicketPriority> = {
   urgent: 'CRITICAL',
 };
 
+// Maps each role to its dashboard route, since this ticket form is shared
+// across staff and customers rather than duplicated per-role.
+const DASHBOARD_ROUTE_BY_ROLE: Record<string, string> = {
+  admin: '/admin',
+  staff: '/staff',
+  dispatcher: '/dispatcher',
+  agent: '/agent',
+  customer: '/customer',
+};
+
+// This page is shared by Staff and Customers rather than duplicated — only
+// the copy (wording) changes based on who's using it. The form, fields,
+// and submit logic are identical for everyone.
+const COPY = {
+  staff: {
+    steps: STEPS_STAFF,
+    headerTitle: 'Support Center',
+    headerSubtitle: 'Submit an internal ticket to our engineering team',
+    step2Heading: 'Ticket Information',
+    step2Subheading: 'Provide detailed notes so our engineers can assist',
+    titlePlaceholder: 'e.g. Cannot export billing report to PDF',
+    descriptionPlaceholder: 'Describe steps to reproduce, error message, or expected behavior...',
+    attachmentLabel: 'Attach screenshot or error log',
+    step3Heading: 'Review Ticket Details',
+    step3Subheading: 'Review the information below before creating the ticket',
+    submitLabel: 'Confirm & Create Ticket',
+    successTitle: 'Ticket Created Successfully!',
+    successBody: 'Your ticket has been dispatched. Our team will review the details and respond shortly.',
+    resetLabel: 'Submit Another Ticket',
+  },
+  customer: {
+    steps: STEPS_CUSTOMER,
+    headerTitle: 'New Complaint',
+    headerSubtitle: 'Create a ticket so our team can look into it',
+    step2Heading: 'Complaint Details',
+    step2Subheading: 'Provide details so our staff can assist',
+    titlePlaceholder: 'e.g. No signal on IPTV since this morning',
+    descriptionPlaceholder:
+      "Describe the problem in detail — when it started, what you've already tried, error messages, etc.",
+    attachmentLabel: 'Attach a photo or document (optional)',
+    step3Heading: 'Review Complaint Details',
+    step3Subheading: 'Review the information below before submitting',
+    submitLabel: 'Confirm & Submit Complaint',
+    successTitle: 'Complaint Submitted!',
+    successBody: 'Your ticket has been created. Our staff will review it and decide next steps.',
+    resetLabel: 'Submit Another Complaint',
+  },
+};
+
 export default function CreateTicketPage() {
+  const navigate = useNavigate();
+
+  // Resolve once per render who's using this page, and pick the matching
+  // wording. Everything else (fields, validation, submit) stays identical.
+  const currentUser = getCurrentUser();
+  const isCustomer = currentUser?.role === 'customer';
+  const t = isCustomer ? COPY.customer : COPY.staff;
+  const STEPS = t.steps;
+  const dashboardRoute = DASHBOARD_ROUTE_BY_ROLE[currentUser?.role ?? ''] ?? '/login';
+
   // Synchronously load categories from localStorage on initial render
   const [categories] = useState<Category[]>(() => getCategories());
 
@@ -145,7 +211,6 @@ export default function CreateTicketPage() {
     e.preventDefault();
     if (!validateStep(1) || !validateStep(2)) return;
 
-    const currentUser = getCurrentUser();
     const now = new Date();
 
     const newTicket: Ticket = {
@@ -197,8 +262,8 @@ export default function CreateTicketPage() {
               <TicketIcon className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">Support Center</h1>
-              <p className="text-xs text-slate-500">Submit an internal ticket to our engineering team</p>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">{t.headerTitle}</h1>
+              <p className="text-xs text-slate-500">{t.headerSubtitle}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -218,16 +283,24 @@ export default function CreateTicketPage() {
             <div className="w-16 h-16 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full flex items-center justify-center mb-4 shadow-sm">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">Ticket Created Successfully!</h2>
+            <h2 className="text-2xl font-bold text-slate-900">{t.successTitle}</h2>
             <p className="text-slate-500 text-sm max-w-md mt-2 leading-relaxed">
-              Your ticket has been dispatched. Our team will review the details and respond shortly.
+              {t.successBody}
             </p>
-            <button
-              onClick={resetForm}
-              className="mt-6 px-6 py-2.5 rounded-xl bg-[#003b7a] hover:bg-[#002f61] text-white font-medium text-sm transition-all shadow-md shadow-[#003b7a]/20"
-            >
-              Submit Another Ticket
-            </button>
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={resetForm}
+                className="px-6 py-2.5 rounded-xl bg-[#003b7a] hover:bg-[#002f61] text-white font-medium text-sm transition-all shadow-md shadow-[#003b7a]/20"
+              >
+                {t.resetLabel}
+              </button>
+              <button
+                onClick={() => navigate(dashboardRoute)}
+                className="px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm transition-all"
+              >
+                Go to Dashboard
+              </button>
+            </div>
           </div>
         ) : (
           /* 2-Column Desktop Grid Layout */
@@ -374,8 +447,8 @@ export default function CreateTicketPage() {
               {currentStep === 2 && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">Ticket Information</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Provide detailed notes so our engineers can assist</p>
+                    <h3 className="text-lg font-bold text-slate-900">{t.step2Heading}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{t.step2Subheading}</p>
                   </div>
 
                   {/* Title Field */}
@@ -386,7 +459,7 @@ export default function CreateTicketPage() {
                       name="title"
                       value={formData.title}
                       onChange={handleInputChange}
-                      placeholder="e.g. Cannot export billing report to PDF"
+                      placeholder={t.titlePlaceholder}
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#003b7a]/20 focus:border-[#003b7a]"
                     />
                     {errors.title && <p className="text-xs text-rose-500">{errors.title}</p>}
@@ -400,7 +473,7 @@ export default function CreateTicketPage() {
                       rows={3}
                       value={formData.description}
                       onChange={handleInputChange}
-                      placeholder="Describe steps to reproduce, error message, or expected behavior..."
+                      placeholder={t.descriptionPlaceholder}
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#003b7a]/20 focus:border-[#003b7a] resize-none"
                     />
                     {errors.description && <p className="text-xs text-rose-500">{errors.description}</p>}
@@ -412,7 +485,7 @@ export default function CreateTicketPage() {
                       <label className="flex items-center gap-3 p-3 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-[#003b7a] hover:bg-slate-50 transition-all">
                         <UploadCloud className="w-5 h-5 text-[#003b7a] shrink-0" />
                         <div>
-                          <p className="text-xs font-semibold text-slate-700">Attach screenshot or error log</p>
+                          <p className="text-xs font-semibold text-slate-700">{t.attachmentLabel}</p>
                           <p className="text-[10px] text-slate-400">PNG, JPG, PDF up to 10MB</p>
                         </div>
                         <input type="file" className="hidden" onChange={handleFileChange} />
@@ -436,8 +509,8 @@ export default function CreateTicketPage() {
               {currentStep === 3 && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">Review Ticket Details</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Review the information below before creating the ticket</p>
+                    <h3 className="text-lg font-bold text-slate-900">{t.step3Heading}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{t.step3Subheading}</p>
                   </div>
 
                   <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 space-y-3">
@@ -502,7 +575,7 @@ export default function CreateTicketPage() {
                     onClick={handleFinalSubmit}
                     className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#003b7a] hover:bg-[#002f61] text-white text-xs font-semibold transition-all shadow-md shadow-[#003b7a]/20 ml-auto"
                   >
-                    Confirm & Create Ticket <Send className="w-3.5 h-3.5" />
+                    {t.submitLabel} <Send className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>

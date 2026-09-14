@@ -5,8 +5,6 @@ import {
     EyeOff,
     Lock,
     User as UserIcon,
-    Mail,
-    Phone,
     AlertCircle,
     UserPlus,
     ArrowRight,
@@ -17,9 +15,6 @@ import { register } from "@/lib/auth";
 const Register = () => {
     const navigate = useNavigate();
 
-    const [fullName, setFullName] = useState("");
-    const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -40,7 +35,7 @@ const Register = () => {
             return;
         }
 
-        const result = register({ fullName, email, phone, username, password });
+        const result = register({ username, password });
 
         if (result.user) {
             navigate("/login");
@@ -97,65 +92,6 @@ const Register = () => {
                         </div>
 
                         <form onSubmit={handleRegister} className="space-y-4">
-
-                            {/* Full Name */}
-                            <div className="space-y-1.5">
-                                <label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                    Full Name
-                                </label>
-                                <div className="relative">
-                                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                    <input
-                                        id="fullName"
-                                        type="text"
-                                        placeholder="Enter your full name"
-                                        value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
-                                        className="w-full pl-11 h-11 text-sm border border-slate-200 bg-white rounded-xl focus:outline-none focus:border-[#003b7a] focus:ring-2 focus:ring-[#003b7a]/10"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {/* Email */}
-                                <div className="space-y-1.5">
-                                    <label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                        Email
-                                    </label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                        <input
-                                            id="email"
-                                            type="email"
-                                            placeholder="you@example.com"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full pl-11 h-11 text-sm border border-slate-200 bg-white rounded-xl focus:outline-none focus:border-[#003b7a] focus:ring-2 focus:ring-[#003b7a]/10"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Phone */}
-                                <div className="space-y-1.5">
-                                    <label htmlFor="phone" className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                        Phone
-                                    </label>
-                                    <div className="relative">
-                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                        <input
-                                            id="phone"
-                                            type="tel"
-                                            placeholder="98XXXXXXXX"
-                                            value={phone}
-                                            onChange={(e) => setPhone(e.target.value)}
-                                            className="w-full pl-11 h-11 text-sm border border-slate-200 bg-white rounded-xl focus:outline-none focus:border-[#003b7a] focus:ring-2 focus:ring-[#003b7a]/10"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                            </div>
 
                             {/* Username */}
                             <div className="space-y-1.5">

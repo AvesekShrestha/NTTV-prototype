@@ -95,7 +95,7 @@ export const navigation: Record<UserRole, NavigationItem[]> = {
     },
     {
       title: "New Complaint",
-      url: "/newComplaint",
+      url: "/newTicket",
       icon: FilePlus,
     },
   ],

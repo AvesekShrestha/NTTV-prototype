@@ -15,7 +15,6 @@ import Dispatcher from "./pages/Dispatcher/Dispatcher";
 import TicketDispatch from "./pages/Dispatcher/TicketDispatch";
 import Register from "./pages/Auth/Register";
 import Customer from "./pages/Customer/Customer";
-import NewComplaint from "./pages/Customer/NewComplaint";
 
 const App = () => {
   return (
@@ -38,7 +37,6 @@ const App = () => {
         <Route element={<Layout><TicketDispatch /></Layout>} path="/ticket/dispatch/:ticketId" />
 
         <Route element={<Layout><Customer /></Layout>} path="/customer" />
-        <Route element={<Layout><NewComplaint /></Layout>} path="/newComplaint" />
 
         <Route element={<Login />} path="/login" />
         <Route element={<Register />} path="/register" />

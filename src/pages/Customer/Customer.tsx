@@ -4,18 +4,7 @@ import { CircleCheck, Clock, Plus, Send, Timer } from "lucide-react";
 import DashboardCard from "@/components/custom/DashboardCard";
 import ComplaintTable from "@/components/custom/ComplaintTable";
 import Searchbar from "@/components/custom/Searchbar";
-import { getMyTickets } from "@/lib/storage";
-
-const SERVICE_TYPE_OPTIONS = [
-    { label: "Service", value: "all" },
-    { label: "IPTV", value: "IPTV" },
-    { label: "NTTV", value: "NTTV" },
-    { label: "SIM", value: "SIM" },
-    { label: "FTTH", value: "FTTH" },
-    { label: "Broadband", value: "BROADBAND" },
-    { label: "Landline", value: "LANDLINE" },
-    { label: "Other", value: "OTHER" },
-];
+import { getCategories, getMyTickets } from "@/lib/storage";
 
 const Customer = () => {
     const [tickets] = useState(() => getMyTickets());
@@ -23,7 +12,7 @@ const Customer = () => {
 
     const [searchQuery, setSearchQuery] = useState("");
     const [status, setStatus] = useState("all");
-    const [serviceType, setServiceType] = useState("all");
+    const [category, setCategory] = useState("all");
 
     const filteredTickets = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
@@ -37,12 +26,12 @@ const Customer = () => {
 
             const matchesStatus = status === "all" || ticket.status === status;
 
-            const matchesServiceType =
-                serviceType === "all" || ticket.serviceType === serviceType;
+            const matchesCategory =
+                category === "all" || ticket.category === category;
 
-            return matchesSearch && matchesStatus && matchesServiceType;
+            return matchesSearch && matchesStatus && matchesCategory;
         });
-    }, [tickets, searchQuery, status, serviceType]);
+    }, [tickets, searchQuery, status, category]);
 
     return (
         <div className="flex flex-col gap-8 p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
@@ -59,7 +48,7 @@ const Customer = () => {
 
                 <div
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#003b7a] text-white rounded-lg text-sm font-medium hover:bg-[#002f61] transition-colors shadow-sm cursor-pointer"
-                    onClick={() => navigate("/newComplaint")}
+                    onClick={() => navigate("/newTicket")}
                 >
                     <Plus className="w-4 h-4" />
                     New Complaint
@@ -111,10 +100,17 @@ const Customer = () => {
                             ],
                         },
                         {
-                            key: "serviceType",
-                            value: serviceType,
-                            onChange: setServiceType,
-                            options: SERVICE_TYPE_OPTIONS,
+                            key: "category",
+                            value: category,
+                            onChange: setCategory,
+                            options: [
+                                { label: "Categories", value: "all" },
+
+                                ...getCategories().map((cat) => ({
+                                    label: cat.name,
+                                    value: cat.id,
+                                })),
+                            ],
                         },
                     ]}
                 />

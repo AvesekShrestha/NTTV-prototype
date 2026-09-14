@@ -1,16 +1,6 @@
-import { MapPin } from "lucide-react";
 import { DataTable, type Column } from "./DataTable";
 import type { Ticket } from "@/types/ticket";
-
-const SERVICE_TYPE_LABELS: Record<string, string> = {
-    IPTV: "IPTV",
-    NTTV: "NTTV",
-    SIM: "SIM",
-    FTTH: "FTTH",
-    BROADBAND: "Broadband",
-    LANDLINE: "Landline",
-    OTHER: "Other",
-};
+import { getCategories } from "@/lib/storage";
 
 const priorityBadgeStyles: Record<Ticket["priority"], string> = {
     CRITICAL: "bg-rose-50 text-rose-700 border border-rose-200/60",
@@ -33,6 +23,13 @@ export interface ComplaintTableProps {
 }
 
 const ComplaintTable = ({ tickets }: ComplaintTableProps) => {
+    const categories = getCategories();
+
+    const getCategoryName = (categoryId: string) => {
+        const category = categories.find((category) => category.id === categoryId);
+        return category?.name ?? "-";
+    };
+
     const columns: Column<Ticket>[] = [
         {
             header: "Complaint ID",
@@ -45,13 +42,9 @@ const ComplaintTable = ({ tickets }: ComplaintTableProps) => {
             cell: (ticket) => <span>{ticket.title}</span>,
         },
         {
-            header: "Service",
+            header: "Category",
             className: "text-slate-700",
-            cell: (ticket) => (
-                <span className="text-sm">
-                    {ticket.serviceType ? SERVICE_TYPE_LABELS[ticket.serviceType] ?? ticket.serviceType : "-"}
-                </span>
-            ),
+            cell: (ticket) => <span className="text-sm">{getCategoryName(ticket.category)}</span>,
         },
         {
             header: "Priority",
@@ -72,18 +65,6 @@ const ComplaintTable = ({ tickets }: ComplaintTableProps) => {
                     {ticket.status}
                 </span>
             ),
-        },
-        {
-            header: "Visit Location",
-            cell: (ticket) =>
-                ticket.location ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
-                        <MapPin className="w-3.5 h-3.5" />
-                        Attached
-                    </span>
-                ) : (
-                    <span className="text-slate-400 text-xs">-</span>
-                ),
         },
         {
             header: "Submitted",
