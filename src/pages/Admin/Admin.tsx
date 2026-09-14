@@ -109,7 +109,7 @@ const Admin = () => {
       <section>
         <ChartCard
           title="Agent Performance vs KPI"
-          subtitle="Resolved tickets per agent — dark blue = met KPI target (≥10)"
+          subtitle="Resolved tickets per agent, ranked highest to lowest — dashed line = KPI target (10)"
         >
           <AgentPerformanceChart tickets={tickets} agents={agents} kpi={10} />
         </ChartCard>

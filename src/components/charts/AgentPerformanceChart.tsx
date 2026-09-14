@@ -18,9 +18,6 @@ interface AgentPerformanceChartProps {
 }
 
 const AgentPerformanceChart = ({ tickets, agents, kpi = 10 }: AgentPerformanceChartProps) => {
-  // A ticket belongs to an agent if:
-  //   • ticket.assignedTo === agent.id  (directly assigned to this agent), OR
-  //   • agent appears in any dispatch's recipients (team dispatch)
   const agentTickets = (agentId: string) =>
     tickets.filter(
       (t) =>
@@ -32,11 +29,12 @@ const AgentPerformanceChart = ({ tickets, agents, kpi = 10 }: AgentPerformanceCh
 
   const data = agents
     .map((agent) => {
-      const all = agentTickets(agent.id);
-      const resolved = all.filter((t) => t.status === "RESOLVED").length;
-      return { name: agent.username, Assigned: all.length, Resolved: resolved };
+      const resolved = agentTickets(agent.id).filter(
+        (t) => t.status === "RESOLVED"
+      ).length;
+      return { name: agent.username, Resolved: resolved };
     })
-    .sort((a, b) => b.Resolved - a.Resolved || b.Assigned - a.Assigned);
+    .sort((a, b) => b.Resolved - a.Resolved);
 
   if (data.length === 0) {
     return (
@@ -47,7 +45,7 @@ const AgentPerformanceChart = ({ tickets, agents, kpi = 10 }: AgentPerformanceCh
     );
   }
 
-  const hasAnyData = data.some((d) => d.Assigned > 0 || d.Resolved > 0);
+  const hasAnyData = data.some((d) => d.Resolved > 0);
 
   if (!hasAnyData) {
     return (
@@ -65,12 +63,8 @@ const AgentPerformanceChart = ({ tickets, agents, kpi = 10 }: AgentPerformanceCh
       {/* Legend row */}
       <div className="flex items-center gap-5 mb-4">
         <div className="flex items-center gap-1.5 text-xs text-slate-500">
-          <span className="inline-block w-3 h-3 rounded-sm bg-[#93c5fd]" />
-          Assigned
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-500">
           <span className="inline-block w-3 h-3 rounded-sm bg-[#003b7a]" />
-          Resolved
+          Resolved tickets
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <svg width="20" height="8">
@@ -126,8 +120,7 @@ const AgentPerformanceChart = ({ tickets, agents, kpi = 10 }: AgentPerformanceCh
               offset: 6,
             }}
           />
-          <Bar dataKey="Assigned" fill="#93c5fd" radius={[0, 4, 4, 0]} maxBarSize={18} />
-          <Bar dataKey="Resolved" fill="#003b7a" radius={[0, 4, 4, 0]} maxBarSize={18} />
+          <Bar dataKey="Resolved" fill="#003b7a" radius={[0, 4, 4, 0]} maxBarSize={22} />
         </BarChart>
       </ResponsiveContainer>
     </div>

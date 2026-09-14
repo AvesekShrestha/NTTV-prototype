@@ -575,19 +575,39 @@ const Reports = () => {
       {/* ── SUMMARY TAB ── */}
       {activeTab === "summary" && (
         <div className="flex flex-col gap-6">
-          {/* Overall stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { label: "Total Tickets", value: tickets.length },
-              { label: "Resolved", value: resolved.length },
-              { label: "Open", value: tickets.length - resolved.length },
-              { label: "Avg. Resolution", value: formatDuration(avgResolutionMs) },
-            ].map((s) => (
-              <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{s.label}</p>
-                <p className="text-xl font-bold text-slate-900 mt-1">{s.value}</p>
-              </div>
-            ))}
+          {/* Overall stats + download buttons on same row */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1">
+              {[
+                { label: "Total Tickets", value: tickets.length },
+                { label: "Resolved", value: resolved.length },
+                { label: "Open", value: tickets.length - resolved.length },
+                { label: "Avg. Resolution", value: formatDuration(avgResolutionMs) },
+              ].map((s) => (
+                <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{s.label}</p>
+                  <p className="text-xl font-bold text-slate-900 mt-1">{s.value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 shrink-0 pt-1">
+              <button
+                id="download-summary-pdf"
+                onClick={handleDownloadSummaryPDF}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                PDF
+              </button>
+              <button
+                id="download-summary-csv"
+                onClick={handleDownloadSummaryCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-[#003b7a] text-white text-sm font-medium rounded-lg hover:bg-[#002d60] transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                CSV
+              </button>
+            </div>
           </div>
 
           {/* Team summary table */}
@@ -631,24 +651,6 @@ const Reports = () => {
             />
           </Section>
 
-          <div className="flex justify-end gap-2">
-            <button
-              id="download-summary-pdf"
-              onClick={handleDownloadSummaryPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              PDF
-            </button>
-            <button
-              id="download-summary-csv"
-              onClick={handleDownloadSummaryCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-[#003b7a] text-white text-sm font-medium rounded-lg hover:bg-[#002d60] transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              CSV
-            </button>
-          </div>
         </div>
       )}
 
@@ -713,7 +715,27 @@ const Reports = () => {
             </button>
           </div>
 
-          <p className="text-xs text-slate-400">{filteredTickets.length} ticket{filteredTickets.length !== 1 ? "s" : ""} found</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-400">{filteredTickets.length} ticket{filteredTickets.length !== 1 ? "s" : ""} found</p>
+            <div className="flex gap-2">
+              <button
+                id="download-detailed-pdf"
+                onClick={handleDownloadDetailedPDF}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                PDF
+              </button>
+              <button
+                id="download-detailed-csv"
+                onClick={handleDownloadDetailedCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-[#003b7a] text-white text-sm font-medium rounded-lg hover:bg-[#002d60] transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                CSV
+              </button>
+            </div>
+          </div>
 
           {/* Table */}
           <div className="rounded-xl border border-slate-200 overflow-hidden">
@@ -900,25 +922,6 @@ const Reports = () => {
                 )}
               </tbody>
             </table>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <button
-              id="download-detailed-pdf"
-              onClick={handleDownloadDetailedPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              PDF
-            </button>
-            <button
-              id="download-detailed-csv"
-              onClick={handleDownloadDetailedCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-[#003b7a] text-white text-sm font-medium rounded-lg hover:bg-[#002d60] transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              CSV
-            </button>
           </div>
         </div>
       )}
