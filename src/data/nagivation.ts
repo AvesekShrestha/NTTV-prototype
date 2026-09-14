@@ -6,6 +6,7 @@ import {
   UserGroup,
   FolderTree,
   Tickets,
+  FilePlus
 } from "lucide-react";
 
 import type { UserRole } from "@/types/user";
@@ -83,6 +84,19 @@ export const navigation: Record<UserRole, NavigationItem[]> = {
       title: "Profile",
       url: "/profile",
       icon: UserRound,
+    },
+  ],
+
+  customer: [
+    {
+      title: "Dashboard",
+      url: "/customer",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "New Complaint",
+      url: "/newComplaint",
+      icon: FilePlus,
     },
   ],
 };

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, User as UserIcon, AlertCircle, ShieldCheck, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -160,7 +160,14 @@ const Login = () => {
             </form>
           </div>
 
-          <p className="text-[11px] text-slate-400 text-center mt-8">
+          <p className="text-xs text-slate-500 text-center mt-8">
+            Are you a customer?{" "}
+            <Link to="/register" className="font-semibold text-[#003b7a] hover:underline">
+              Create an account
+            </Link>
+          </p>
+
+          <p className="text-[11px] text-slate-400 text-center mt-3">
             © Nepal Telecom · Authorized Personnel Only
           </p>
         </div>

@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "staff" | "dispatcher" | "agent"
+export type UserRole = "admin" | "staff" | "dispatcher" | "agent" | "customer"
 export type AgentLevel = "L1" | "L2" | "L3"
 
 export type User = {
@@ -8,4 +8,8 @@ export type User = {
   level?: AgentLevel,
   role: UserRole,
   team?: string
+
+  fullName?: string,
+  email?: string,
+  phone?: string,
 }
