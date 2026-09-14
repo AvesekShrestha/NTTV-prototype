@@ -18,11 +18,19 @@ import {
 } from "lucide-react";
 
 import DashboardCard from "@/components/custom/DashboardCard";
+import ForwardTicketDialog from "@/components/custom/ForwardTicketDialog";
+import EscalateTicketDialog from "@/components/custom/EscalateTicketDialog";
+
 import {
   getCategories,
   getTeams,
   getTicket,
   getUsers,
+  getCurrentUser,
+  startTicket,
+  forwardTicket,
+  escalateTicket,
+  resolveTicket,
 } from "@/lib/storage";
 
 import type { Ticket } from "@/types/ticket";
@@ -62,10 +70,7 @@ const statusStyles: Record<
   },
 };
 
-const priorityStyles: Record<
-  Ticket["priority"],
-  string
-> = {
+const priorityStyles: Record<Ticket["priority"], string> = {
   CRITICAL: "bg-red-50 text-red-700 border-red-200",
   HIGH: "bg-orange-50 text-orange-700 border-orange-200",
   MEDIUM: "bg-yellow-50 text-yellow-700 border-yellow-200",
@@ -135,13 +140,16 @@ export default function TicketDetail() {
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
 
-  const [ticket] = useState<Ticket | undefined>(() =>
+  const [ticket, setTicket] = useState<Ticket | undefined>(() =>
     ticketId ? getTicket(ticketId) : undefined
   );
 
   const [expandedActivity, setExpandedActivity] = useState<string | null>(
     null
   );
+
+  const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
+  const [escalateDialogOpen, setEscalateDialogOpen] = useState(false);
 
   if (!ticket) {
     return (
@@ -164,6 +172,8 @@ export default function TicketDetail() {
   const categories = getCategories();
   const teams = getTeams();
   const users: UserType[] = getUsers();
+
+  const currentUser = getCurrentUser();
 
   const category = categories.find(
     (item) => item.id === ticket.category
@@ -211,10 +221,190 @@ export default function TicketDetail() {
     );
   };
 
+  /*
+   * ---------------------------------------------------------
+   * Agent assignment
+   * ---------------------------------------------------------
+   *
+   * A ticket can be assigned in two ways:
+   *
+   * 1. Directly to an agent:
+   *      ticket.assignedTo === currentUser.id
+   *
+   * 2. To a team:
+   *      ticket.assignedTeamId === team.id
+   *      AND currentUser.id exists inside team.members
+   *
+   * Therefore, assignedTo alone must NOT be used to determine
+   * whether the current agent can work on the ticket.
+   */
+
+  const isDirectlyAssignedAgent =
+    currentUser?.role === "agent" &&
+    ticket.assignedTo === currentUser.id;
+
+  const isTeamMember =
+    currentUser?.role === "agent" &&
+    !!assignedTeam &&
+    !!currentUser &&
+    assignedTeam.members?.includes(currentUser.id) === true;
+
+  const isAssignedAgent =
+    isDirectlyAssignedAgent || isTeamMember;
+
+  /*
+   * ---------------------------------------------------------
+   * Ticket action permissions
+   * ---------------------------------------------------------
+   *
+   * ASSIGNED:
+   *   Newly dispatched ticket.
+   *
+   * FORWARDED:
+   *   Ticket received after another agent/team forwarded it.
+   *
+   * ESCALATED:
+   *   Ticket received from a lower support level.
+   *
+   * INPROCESS:
+   *   Agent has started working.
+   *
+   * RESOLVED:
+   *   No further actions.
+   */
+
+  const canStart =
+    isAssignedAgent &&
+    ["ASSIGNED", "FORWARDED", "ESCALATED"].includes(
+      ticket.status
+    );
+
+  const canForward =
+    isAssignedAgent &&
+    ["ASSIGNED", "INPROCESS", "FORWARDED", "ESCALATED"].includes(
+      ticket.status
+    );
+
+  /*
+   * Escalation:
+   *
+   * L1 -> L2
+   * L2 -> L3
+   *
+   * L3 cannot escalate any further.
+   */
+  const canEscalate =
+    isAssignedAgent &&
+    ["ASSIGNED", "INPROCESS", "FORWARDED", "ESCALATED"].includes(
+      ticket.status
+    ) &&
+    ticket.level !== "L3";
+
+  /*
+   * Resolve:
+   *
+   * Agent must start working before resolving.
+   */
+  const canResolve =
+    isAssignedAgent &&
+    ticket.status === "INPROCESS";
+
+  /*
+   * ---------------------------------------------------------
+   * Refresh ticket
+   * ---------------------------------------------------------
+   */
+
+  const refreshTicket = () => {
+    const updatedTicket = getTicket(ticket.id);
+
+    if (updatedTicket) {
+      setTicket(updatedTicket);
+    }
+  };
+
+  /*
+   * ---------------------------------------------------------
+   * Agent actions
+   * ---------------------------------------------------------
+   */
+
+  const handleStart = () => {
+    if (!currentUser) return;
+
+    startTicket(
+      ticket.id,
+      currentUser.id
+    );
+
+    refreshTicket();
+  };
+
+  const handleForward = (
+    teamId: string,
+    agentId?: string
+  ) => {
+    if (!currentUser) return;
+
+    forwardTicket(
+      ticket.id,
+      [
+        agentId
+          ? {
+            type: "AGENT",
+            agentId,
+          }
+          : {
+            type: "TEAM",
+            teamId,
+          },
+      ],
+      currentUser.id,
+      teamId,
+      agentId
+    );
+
+    setForwardDialogOpen(false);
+
+    refreshTicket();
+  };
+
+  const handleEscalate = (
+    teamId: string,
+    agentId?: string
+  ) => {
+    if (!currentUser) return;
+
+    escalateTicket(
+      ticket.id,
+      teamId,
+      agentId,
+      currentUser.id
+    );
+
+    setEscalateDialogOpen(false);
+
+    refreshTicket();
+  };
+
+  const handleResolve = () => {
+    if (!currentUser) return;
+
+    resolveTicket(
+      ticket.id,
+      currentUser.id
+    );
+
+    refreshTicket();
+  };
+
   return (
     <div className="flex flex-col gap-8 p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
 
-      {/* Header */}
+      {/* =====================================================
+          Header
+      ====================================================== */}
+
       <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5">
         <Link
           to="/tickets"
@@ -251,7 +441,10 @@ export default function TicketDetail() {
         </div>
       </div>
 
-      {/* Overview */}
+      {/* =====================================================
+          Overview
+      ====================================================== */}
+
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardCard
           title="Category"
@@ -278,10 +471,167 @@ export default function TicketDetail() {
         />
       </section>
 
-      {/* Ticket Information */}
+      {/* =====================================================
+          Agent Actions
+      ====================================================== */}
+
+      {isAssignedAgent && (
+        <section className="flex flex-col gap-4 rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm">
+
+          <div className="pb-4 border-b border-slate-100">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">
+                  Agent Actions
+                </h2>
+
+                <p className="text-xs text-slate-500 mt-1">
+                  Manage this ticket based on your current assignment.
+                </p>
+              </div>
+
+              <div className="hidden sm:flex items-center gap-2 rounded-full bg-slate-50 border border-slate-100 px-3 py-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+
+                <span className="text-[11px] font-semibold text-slate-600">
+                  {ticket.level ?? "Unassigned"} Level
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+            {/* =================================================
+                Start
+            ================================================== */}
+
+            {canStart && (
+              <button
+                type="button"
+                onClick={handleStart}
+                className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-amber-300 hover:bg-amber-50/50"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700 transition-colors group-hover:bg-amber-100">
+                  <Play className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Start
+                  </p>
+
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Start working on this ticket
+                  </p>
+                </div>
+              </button>
+            )}
+
+            {/* =================================================
+                Forward
+            ================================================== */}
+
+            {canForward && (
+              <button
+                type="button"
+                onClick={() => setForwardDialogOpen(true)}
+                className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-orange-300 hover:bg-orange-50/50"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-700 transition-colors group-hover:bg-orange-100">
+                  <Forward className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Forward
+                  </p>
+
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Send to another team or agent
+                  </p>
+                </div>
+              </button>
+            )}
+
+            {/* =================================================
+                Escalate
+            ================================================== */}
+
+            {canEscalate && (
+              <button
+                type="button"
+                onClick={() => setEscalateDialogOpen(true)}
+                className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-red-300 hover:bg-red-50/50"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-700 transition-colors group-hover:bg-red-100">
+                  <ArrowUp className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Escalate
+                  </p>
+
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Move to the next support level
+                  </p>
+                </div>
+              </button>
+            )}
+
+            {/* =================================================
+                Resolve
+            ================================================== */}
+
+            {canResolve && (
+              <button
+                type="button"
+                onClick={handleResolve}
+                className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-emerald-300 hover:bg-emerald-50/50"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 transition-colors group-hover:bg-emerald-100">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Resolve
+                  </p>
+
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Mark this ticket as resolved
+                  </p>
+                </div>
+              </button>
+            )}
+          </div>
+
+          {/* =================================================
+              No actions
+          ================================================== */}
+
+          {!canStart &&
+            !canForward &&
+            !canEscalate &&
+            !canResolve && (
+              <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-4">
+                <p className="text-sm text-slate-500">
+                  No actions are currently available for this ticket.
+                </p>
+              </div>
+            )}
+        </section>
+      )}
+
+      {/* =====================================================
+          Ticket Information
+      ====================================================== */}
+
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Description */}
+
         <div className="lg:col-span-2 flex flex-col gap-4 bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm">
           <div className="pb-4 border-b border-slate-100">
             <h2 className="text-lg font-bold text-slate-900">
@@ -363,10 +713,12 @@ export default function TicketDetail() {
                 </p>
               </div>
             )}
+
           </div>
         </div>
 
         {/* Current Status */}
+
         <div className="flex flex-col gap-4 bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm">
 
           <div className="pb-4 border-b border-slate-100">
@@ -450,9 +802,13 @@ export default function TicketDetail() {
             </div>
           </div>
         </div>
+
       </section>
 
-      {/* Activity Timeline */}
+      {/* =====================================================
+          Activity Timeline
+      ====================================================== */}
+
       <section className="flex flex-col gap-4 bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm">
 
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -468,8 +824,11 @@ export default function TicketDetail() {
 
           <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
             <Activity className="w-3.5 h-3.5" />
+
             {activities.length}{" "}
-            {activities.length === 1 ? "Activity" : "Activities"}
+            {activities.length === 1
+              ? "Activity"
+              : "Activities"}
           </div>
         </div>
 
@@ -484,7 +843,6 @@ export default function TicketDetail() {
         ) : (
           <div className="relative">
 
-            {/* Timeline line */}
             <div className="absolute left-4.5 top-5 bottom-5 w-px bg-slate-200" />
 
             <div className="flex flex-col gap-3">
@@ -493,7 +851,8 @@ export default function TicketDetail() {
                 const config =
                   activityConfig[activity.type];
 
-                const Icon = config?.icon ?? Activity;
+                const Icon =
+                  config?.icon ?? Activity;
 
                 const isExpanded =
                   expandedActivity === activity.id;
@@ -505,14 +864,14 @@ export default function TicketDetail() {
                   >
                     <div className="flex items-start gap-4">
 
-                      {/* Icon */}
                       <div
-                        className={`relative z-10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${config?.className ?? "bg-slate-100 text-slate-600"}`}
+                        className={`relative z-10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${config?.className ??
+                          "bg-slate-100 text-slate-600"
+                          }`}
                       >
                         <Icon className="w-4 h-4" />
                       </div>
 
-                      {/* Activity */}
                       <div className="flex-1 min-w-0">
 
                         <button
@@ -541,15 +900,16 @@ export default function TicketDetail() {
 
                             <ChevronDown
                               className={`w-4 h-4 shrink-0 text-slate-400 transition-transform ${isExpanded
-                                ? "rotate-180"
-                                : ""
+                                  ? "rotate-180"
+                                  : ""
                                 }`}
                             />
+
                           </div>
 
-                          {/* Expanded Details */}
                           {isExpanded && (
                             <div className="border-t border-slate-100 px-4 py-4 bg-slate-50/50">
+
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                                 <ActivityDetail
@@ -634,6 +994,7 @@ export default function TicketDetail() {
                             </div>
                           )}
                         </button>
+
                       </div>
                     </div>
                   </div>
@@ -643,9 +1004,13 @@ export default function TicketDetail() {
             </div>
           </div>
         )}
+
       </section>
 
-      {/* Dispatch History */}
+      {/* =====================================================
+          Dispatch History
+      ====================================================== */}
+
       {ticket.dispatches?.length > 0 && (
         <section className="flex flex-col gap-4 bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm">
 
@@ -685,31 +1050,42 @@ export default function TicketDetail() {
                     <div className="text-xs text-slate-500">
                       By{" "}
                       <span className="font-semibold text-slate-700">
-                        {getUserName(dispatch.dispatchedBy)}
+                        {getUserName(
+                          dispatch.dispatchedBy
+                        )}
                       </span>
                     </div>
+
                   </div>
 
                   <div className="flex flex-wrap gap-2">
 
-                    {dispatch.targets.map((target, index) => (
-                      <span
-                        key={`${dispatch.id}-${index}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600"
-                      >
-                        {target.type === "TEAM" ? (
-                          <>
-                            <Users className="w-3 h-3" />
-                            {getTeamName(target.teamId)}
-                          </>
-                        ) : (
-                          <>
-                            <User className="w-3 h-3" />
-                            {getUserName(target.agentId)}
-                          </>
-                        )}
-                      </span>
-                    ))}
+                    {dispatch.targets.map(
+                      (target, index) => (
+                        <span
+                          key={`${dispatch.id}-${index}`}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600"
+                        >
+                          {target.type === "TEAM" ? (
+                            <>
+                              <Users className="w-3 h-3" />
+
+                              {getTeamName(
+                                target.teamId
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <User className="w-3 h-3" />
+
+                              {getUserName(
+                                target.agentId
+                              )}
+                            </>
+                          )}
+                        </span>
+                      )
+                    )}
 
                   </div>
 
@@ -720,6 +1096,37 @@ export default function TicketDetail() {
           </div>
         </section>
       )}
+
+      {/* =====================================================
+          Forward Dialog
+      ====================================================== */}
+
+      {isAssignedAgent && (
+        <ForwardTicketDialog
+          open={forwardDialogOpen}
+          onOpenChange={setForwardDialogOpen}
+          ticket={ticket}
+          teams={teams}
+          users={users}
+          onForward={handleForward}
+        />
+      )}
+
+      {/* =====================================================
+          Escalate Dialog
+      ====================================================== */}
+
+      {isAssignedAgent && (
+        <EscalateTicketDialog
+          open={escalateDialogOpen}
+          onOpenChange={setEscalateDialogOpen}
+          ticket={ticket}
+          teams={teams}
+          users={users}
+          onEscalate={handleEscalate}
+        />
+      )}
+
     </div>
   );
 }

@@ -250,12 +250,11 @@ const Agent = () => {
         />
       </section>
 
-      {/* Tickets */}
       <TicketTable
         tickets={filteredTickets}
         role="AGENT"
-        onForward={(ticket) => navigate(`/ticket/forward/${ticket.id}`)}
-        onEscalate={(ticket) => navigate(`/ticket/escalate/${ticket.id}`)}
+        onForward={(ticket) => navigate(`/tickets/${ticket.id}`)}
+        onEscalate={(ticket) => navigate(`/tickets/${ticket.id}`)}
       />
     </div>
   );

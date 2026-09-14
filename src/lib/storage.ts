@@ -439,26 +439,59 @@ export const forwardTicket = (
   if (!ticket) return;
 
   const now = new Date();
-
   const teams = getTeams();
 
   const agentIds = new Set<string>();
 
-  targets.forEach((target) => {
-    if (target.type === "AGENT") {
-      agentIds.add(target.agentId);
-      return;
-    }
+  let assignedTeamId: string | undefined = toTeamId;
+  let assignedTo: string | undefined = toUserId;
+  let level = ticket.level;
 
-    const team = teams.find(
-      (team) => team.id === target.teamId
+  /*
+   * Resolve destination assignment and level.
+   *
+   * If forwarding to an agent:
+   * - assignedTo = that agent
+   * - find the team containing that agent
+   * - use that team's level
+   *
+   * If forwarding to a team:
+   * - assignedTeamId = that team
+   * - assignedTo = undefined
+   * - use the team's level
+   */
+  if (toUserId) {
+    assignedTo = toUserId;
+
+    const agentTeam = teams.find((team) =>
+      team.members?.includes(toUserId)
     );
 
-    team?.members?.forEach((memberId) => {
-      agentIds.add(memberId);
-    });
-  });
+    if (agentTeam) {
+      assignedTeamId = agentTeam.id;
+      level = agentTeam.level;
+    }
 
+    agentIds.add(toUserId);
+  } else if (toTeamId) {
+    const targetTeam = teams.find(
+      (team) => team.id === toTeamId
+    );
+
+    if (targetTeam) {
+      assignedTeamId = targetTeam.id;
+      assignedTo = undefined;
+      level = targetTeam.level;
+
+      targetTeam.members?.forEach((memberId) => {
+        agentIds.add(memberId);
+      });
+    }
+  }
+
+  /*
+   * Build recipients.
+   */
   const recipients: TicketRecipient[] =
     Array.from(agentIds).map((agentId) => ({
       id: crypto.randomUUID(),
@@ -466,6 +499,9 @@ export const forwardTicket = (
       receivedAt: now,
     }));
 
+  /*
+   * Create dispatch history.
+   */
   const dispatch: TicketDispatch = {
     id: crypto.randomUUID(),
     targets,
@@ -474,6 +510,9 @@ export const forwardTicket = (
     recipients,
   };
 
+  /*
+   * Create activity.
+   */
   const activity: TicketActivity = {
     id: crypto.randomUUID(),
     type: "FORWARDED",
@@ -481,15 +520,18 @@ export const forwardTicket = (
     timestamp: now,
 
     fromLevel: ticket.level,
-    toLevel: ticket.level,
+    toLevel: level,
 
     fromTeamId: ticket.assignedTeamId,
-    toTeamId,
+    toTeamId: assignedTeamId,
 
     fromUserId: ticket.assignedTo,
-    toUserId,
+    toUserId: assignedTo,
   };
 
+  /*
+   * Update ticket.
+   */
   const updatedTickets = tickets.map((ticket) =>
     ticket.id === ticketId
       ? {
@@ -497,8 +539,9 @@ export const forwardTicket = (
 
         status: "FORWARDED" as TicketStatus,
 
-        assignedTeamId: toTeamId,
-        assignedTo: toUserId,
+        assignedTeamId,
+        assignedTo,
+        level,
 
         dispatches: [
           ...(ticket.dispatches ?? []),
@@ -517,7 +560,6 @@ export const forwardTicket = (
 
   saveTickets(updatedTickets);
 };
-
 
 // Escalate
 

@@ -105,14 +105,17 @@ const AddTeamDialog = ({ categories, onTeamCreated }: AddTeamDialogProps) => {
             </label>
             <Select
               value={categoryId}
-              onValueChange={(val) => setCategoryId(val ?? "")}
+              onValueChange={(value) => setCategoryId(value ?? "")}
             >
               <SelectTrigger id="category" className="w-full">
-                <SelectValue placeholder="Select a category" />
+                <SelectValue placeholder="Select a category">
+                  {categories.find((cat) => cat.id === categoryId)?.name}
+                </SelectValue>
               </SelectTrigger>
+
               <SelectContent>
                 {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.name}>
+                  <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
                   </SelectItem>
                 ))}
