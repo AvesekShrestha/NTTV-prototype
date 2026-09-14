@@ -1,5 +1,5 @@
 import type { User } from "@/types/user";
-import { addUser, getUsers, setCurrentUser } from "./storage";
+import { addUser, getUsers, removeCurrentUser, setCurrentUser } from "./storage";
 
 const admin: User = {
   id: "admin-001",
@@ -7,6 +7,7 @@ const admin: User = {
   password: "admin123",
   role: "admin"
 }
+
 
 export const login = (username: string, password: string): User | null => {
   const users = getUsers()
@@ -24,6 +25,11 @@ export const login = (username: string, password: string): User | null => {
   }
 
   return null;
+}
+
+export const logout = () => {
+
+  removeCurrentUser();
 }
 
 

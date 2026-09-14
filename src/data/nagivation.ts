@@ -6,6 +6,7 @@ import {
   UserRound,
   UserGroup,
   FolderTree,
+  Tickets,
 } from "lucide-react";
 
 import type { UserRole } from "@/types/user";
@@ -68,8 +69,14 @@ export const navigation: Record<UserRole, NavigationItem[]> = {
     {
       title: "Tickets",
       url: "/tickets",
+      icon: Tickets,
+    },
+    {
+      title: "New Ticket",
+      url: "/newTicket",
       icon: Ticket,
     },
+
   ],
 
   agent: [

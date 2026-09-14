@@ -1,21 +1,18 @@
 import { useState } from "react";
-import { Users, Shield, Layers, Plus } from "lucide-react";
+import { Users, Shield, Layers } from "lucide-react";
 import Searchbar from "@/components/custom/Searchbar";
 import DashboardCard from "@/components/custom/DashboardCard";
 import type { Team } from "@/types/team";
-import { getTeams, removeTeam } from "@/lib/storage";
-import { CreateTeamModal } from "@/components/custom/CreateTeamModal";
-import { TeamInfoModal } from "@/components/custom/TeamInfoModal";
+import { getCategories, getTeams, removeTeam } from "@/lib/storage";
+import AddTeamDialog from "@/components/custom/AddTeamDialog";
 import TeamTable from "@/components/custom/TeamTable";
 
 export default function Teams() {
   const [teams, setTeams] = useState<Team[]>(() => getTeams());
+  const [categories] = useState(() => getCategories());
   const [searchQuery, setSearchQuery] = useState("");
   const [filterLevel, setFilterLevel] = useState<string>("all");
-
-  // Modal State Control
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedTeamForInfo, setSelectedTeamForInfo] = useState<Team | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string>("all");
 
   const handleTeamDeleted = (teamId: string) => {
     removeTeam(teamId);
@@ -26,15 +23,6 @@ export default function Teams() {
     setTeams((prev) => [...prev, newTeam]);
   };
 
-  const handleTeamUpdated = (updatedTeam: Team) => {
-    setTeams((prev) =>
-      prev.map((team) => (team.id === updatedTeam.id ? updatedTeam : team))
-    );
-    if (selectedTeamForInfo?.id === updatedTeam.id) {
-      setSelectedTeamForInfo(updatedTeam);
-    }
-  };
-
   const filteredTeams = teams.filter((team) => {
     const matchesSearch = team.name
       .toLowerCase()
@@ -42,10 +30,17 @@ export default function Teams() {
 
     const matchesLevel = filterLevel === "all" || team.level === filterLevel;
 
-    return matchesSearch && matchesLevel;
+    // Compares team.categoryId against filterCategory (which holds category.id)
+    const matchesCategory =
+      filterCategory === "all" || team.categoryId === filterCategory;
+
+    return matchesSearch && matchesLevel && matchesCategory;
   });
 
-  const totalMembers = teams.reduce((sum, team) => sum + team.members.length, 0);
+  const totalMembers = teams.reduce(
+    (sum, team) => sum + (team.members?.length ?? 0),
+    0
+  );
 
   return (
     <div className="flex flex-col gap-8 p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
@@ -59,13 +54,11 @@ export default function Teams() {
             Organize support teams, category assignments, and level escalations.
           </p>
         </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-slate-50 text-sm font-medium rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Create Team
-        </button>
+
+        <AddTeamDialog
+          categories={categories}
+          onTeamCreated={handleTeamCreated}
+        />
       </div>
 
       {/* Metric Cards Grid */}
@@ -79,7 +72,7 @@ export default function Teams() {
         />
       </section>
 
-      {/* Main Content Section */}
+      {/* Search and Filters */}
       <section className="flex flex-col gap-4">
         <Searchbar
           searchQuery={searchQuery}
@@ -97,29 +90,24 @@ export default function Teams() {
                 { label: "L3 Support", value: "L3" },
               ],
             },
+            {
+              key: "category",
+              value: filterCategory,
+              onChange: setFilterCategory,
+              options: [
+                { label: "Categories", value: "all" },
+                // Display category name in dropdown label, pass category id as value
+                ...categories.map((cat) => ({
+                  label: cat.name,
+                  value: cat.id,
+                })),
+              ],
+            },
           ]}
-        />
-        <TeamTable
-          teams={filteredTeams}
-          onTeamDeleted={handleTeamDeleted}
-          onTeamUpdated={handleTeamUpdated}
-          onViewTeamInfo={(team) => setSelectedTeamForInfo(team)}
         />
       </section>
 
-      {/* Separate Modals */}
-      <CreateTeamModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onTeamCreated={handleTeamCreated}
-      />
-
-      <TeamInfoModal
-        team={selectedTeamForInfo}
-        isOpen={!!selectedTeamForInfo}
-        onClose={() => setSelectedTeamForInfo(null)}
-        onTeamUpdated={handleTeamUpdated}
-      />
+      <TeamTable onTeamDeleted={handleTeamDeleted} teams={filteredTeams} />
     </div>
   );
 }

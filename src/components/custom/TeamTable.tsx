@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { Trash2 } from "lucide-react";
 import { DataTable, type Column } from "./DataTable";
 import type { Team, TeamLevel } from "@/types/team";
-// import { updateTeam } from "@/lib/storage";
 import { getCategories } from "@/lib/storage";
 
 const levelBadgeStyles: Record<TeamLevel, string> = {
@@ -14,21 +13,10 @@ const levelBadgeStyles: Record<TeamLevel, string> = {
 export interface TeamTableProps {
   teams: Team[];
   onTeamDeleted(teamId: string): void;
-  onTeamUpdated(updatedTeam: Team): void;
 }
 
-const TeamTable = ({
-  teams,
-  onTeamDeleted,
-  onTeamUpdated,
-}: TeamTableProps) => {
+const TeamTable = ({ teams, onTeamDeleted }: TeamTableProps) => {
   const categories = getCategories();
-
-  const handleLevelChange = (team: Team, newLevel: TeamLevel) => {
-    const updated = { ...team, level: newLevel };
-    // updateTeam(updated);
-    onTeamUpdated(updated);
-  };
 
   const columns: Column<Team>[] = [
     {
@@ -57,23 +45,20 @@ const TeamTable = ({
     {
       header: "Level",
       cell: (team) => (
-        <select
-          value={team.level}
-          onChange={(e) => handleLevelChange(team, e.target.value as TeamLevel)}
-          className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs font-semibold focus:outline-none focus:ring-1 ${levelBadgeStyles[team.level]
+        <span
+          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${levelBadgeStyles[team.level]
             }`}
         >
-          <option value="L1">L1</option>
-          <option value="L2">L2</option>
-          <option value="L3">L3</option>
-        </select>
+          {team.level}
+        </span>
       ),
     },
     {
       header: "Members Count",
       cell: (team) => (
         <span className="text-xs font-medium text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200/60">
-          {team.members.length} member{team.members.length !== 1 ? "s" : ""}
+          {team.members?.length ?? 0} member
+          {(team.members?.length ?? 0) !== 1 ? "s" : ""}
         </span>
       ),
     },

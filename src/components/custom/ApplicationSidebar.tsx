@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   LogOut,
   User as UserIcon,
@@ -30,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { logout } from "@/lib/auth";
 
 export type NavigationItem = {
   title: string;
@@ -48,7 +50,6 @@ type ApplicationSidebarProps = {
   navigation: NavigationItem[];
   user: User;
   activePath?: string;
-  onLogout?: () => void;
   onProfileClick?: () => void;
   onSettingsClick?: () => void;
 };
@@ -57,7 +58,6 @@ const ApplicationSidebar = ({
   navigation,
   user,
   activePath,
-  onLogout,
   onProfileClick,
   onSettingsClick,
 }: ApplicationSidebarProps) => {
@@ -66,6 +66,14 @@ const ApplicationSidebar = ({
 
   const { isMobile, state } = useSidebar();
   const isCollapsed = state === "collapsed";
+
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login")
+
+  }
 
   return (
     <Sidebar
@@ -236,9 +244,8 @@ const ApplicationSidebar = ({
 
                 <DropdownMenuSeparator className="my-1 bg-slate-100" />
 
-                <DropdownMenuGroup>
+                <DropdownMenuGroup onClick={handleLogout}>
                   <DropdownMenuItem
-                    onClick={onLogout}
                     className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
                   >
                     <LogOut className="size-4" />

@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 interface DashboardCardProps {
   title: string,
-  value: number,
+  value: number | string,
   icon: LucideIcon
 }
 

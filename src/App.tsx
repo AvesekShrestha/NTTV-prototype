@@ -6,6 +6,10 @@ import AdminUsers from "./pages/Admin/User";
 import Category from "./pages/Admin/Categories";
 import Teams from "./pages/Admin/Team";
 import TeamDetail from "./pages/Admin/TeamDetail";
+import Agent from "./pages/Agent/Agent";
+import Staff from "./pages/Staff/Staff";
+import Tickets from "./pages/Staff/Tickets";
+import CreateTicketPage from "./pages/Staff/NewTicket";
 
 const App = () => {
   return (
@@ -16,6 +20,13 @@ const App = () => {
         <Route element={<Layout><Category /></Layout>} path="/category" />
         <Route element={<Layout><Teams /></Layout>} path="/teams" />
         <Route path="/teams/:teamId" element={<TeamDetail />} />
+
+        <Route element={<Layout><Agent /></Layout>} path="/agent" />
+
+        <Route element={<Layout><Staff /></Layout>} path="/staff" />
+        <Route element={<Layout><Tickets /></Layout>} path="/tickets" />
+        <Route element={<Layout><CreateTicketPage /></Layout>} path="/newTicket" />
+
         <Route element={<Login />} path="/login" />
       </Routes>
     </>

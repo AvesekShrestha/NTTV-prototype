@@ -1,8 +1,12 @@
 import DashboardCard from "@/components/custom/DashboardCard";
 import TicketTable from "@/components/custom/TicketTable";
 import { User } from "lucide-react";
+import { useState } from "react";
+import { getTickets } from "@/lib/storage";
 
 const Admin = () => {
+
+  const [tickets] = useState(() => getTickets())
   return (
     <div className="flex flex-col gap-8 p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
       {/* Page Header */}
@@ -29,7 +33,7 @@ const Admin = () => {
             Recent Tickets
           </h2>
         </div>
-        <TicketTable />
+        <TicketTable tickets={tickets} />
       </section>
     </div>
   );
