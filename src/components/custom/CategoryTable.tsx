@@ -2,11 +2,6 @@ import { Trash2 } from "lucide-react";
 import { DataTable, type Column } from "./DataTable";
 import type { Category, CategoryStatus } from "@/types/category";
 
-const statusBadgeStyles: Record<CategoryStatus, string> = {
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200/60 focus:ring-emerald-500",
-  inactive: "bg-slate-100 text-slate-600 border-slate-200/60 focus:ring-slate-400",
-};
-
 export interface CategoryTableProps {
   categories: Category[];
   onCategoryDeleted(categoryId: string): void;
@@ -16,7 +11,7 @@ export interface CategoryTableProps {
 const CategoryTable = ({
   categories,
   onCategoryDeleted,
-  onStatusChange
+  onStatusChange,
 }: CategoryTableProps) => {
   const columns: Column<Category>[] = [
     {
@@ -28,44 +23,46 @@ const CategoryTable = ({
         </span>
       ),
     },
+
     {
       header: "Category Name",
       className: "font-medium text-slate-900",
       cell: (category) => (
-        <span className="font-semibold text-slate-900">{category.name}</span>
+        <span className="font-semibold text-slate-900">
+          {category.name}
+        </span>
       ),
     },
+
     {
       header: "Description",
-      className: "text-slate-600 max-w-sm truncate text-xs",
+      className: "max-w-sm truncate text-xs text-slate-600",
       cell: (category) => (
-        <span className="text-slate-600 truncate block max-w-xs">
+        <span className="block max-w-xs truncate text-slate-600">
           {category.description}
         </span>
       ),
     },
+
     {
       header: "Status",
       cell: (category) => (
-        <div className="relative inline-block">
-          <select
-            value={category.status}
-            onChange={(e) =>
-              onStatusChange(category.id, e.target.value as CategoryStatus)
-            }
-            className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium appearance-none pr-6 focus:outline-none focus:ring-1 ${statusBadgeStyles[category.status]
-              }`}
-          >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-          <span
-            className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 size-1.5 rounded-full ${category.status === "active" ? "bg-emerald-500" : "bg-slate-400"
-              }`}
-          />
-        </div>
+        <select
+          value={category.status}
+          onChange={(e) =>
+            onStatusChange(
+              category.id,
+              e.target.value as CategoryStatus
+            )
+          }
+          className="cursor-pointer rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm outline-none transition-colors hover:border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-300"
+        >
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
       ),
     },
+
     {
       header: "Actions",
       className: "text-right",
@@ -73,10 +70,10 @@ const CategoryTable = ({
         <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => onCategoryDeleted(category.id)}
-            className="inline-flex items-center justify-center p-2 rounded-md text-slate-900 hover:text-red-600 hover:bg-red-50 hover:border-red-200 border border-transparent transition-colors"
+            className="inline-flex items-center justify-center rounded-md border border-transparent p-2 text-slate-900 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
             title="Delete Category"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       ),
