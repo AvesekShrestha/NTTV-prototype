@@ -1,5 +1,5 @@
 import Layout from "./layout";
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 import Login from "./pages/Auth/Login";
 import Admin from "./pages/Admin/Admin";
 import AdminUsers from "./pages/Admin/User";
@@ -13,11 +13,13 @@ import CreateTicketPage from "./pages/Staff/NewTicket";
 import TicketDetail from "./pages/Staff/TicketDetail";
 import Dispatcher from "./pages/Dispatcher/Dispatcher";
 import TicketDispatch from "./pages/Dispatcher/TicketDispatch";
+import Reports from "./pages/Admin/Reports";
 
 const App = () => {
   return (
     <>
       <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route element={<Layout><Admin /></Layout>} path="/admin" />
         <Route element={<Layout><AdminUsers /></Layout>} path="/users" />
         <Route element={<Layout><Category /></Layout>} path="/category" />
@@ -33,6 +35,8 @@ const App = () => {
 
         <Route element={<Layout><Dispatcher /></Layout>} path="/dispatcher" />
         <Route element={<Layout><TicketDispatch /></Layout>} path="/ticket/dispatch/:ticketId" />
+
+        <Route element={<Layout><Reports /></Layout>} path="/reports" />
 
         <Route element={<Login />} path="/login" />
       </Routes>

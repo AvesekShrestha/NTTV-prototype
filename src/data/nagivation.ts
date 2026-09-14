@@ -6,6 +6,7 @@ import {
   UserGroup,
   FolderTree,
   Tickets,
+  FileText,
 } from "lucide-react";
 
 import type { UserRole } from "@/types/user";
@@ -33,7 +34,11 @@ export const navigation: Record<UserRole, NavigationItem[]> = {
       url: "/category",
       icon: FolderTree,
     },
-
+    {
+      title: "Reports",
+      url: "/reports",
+      icon: FileText,
+    },
   ],
 
   dispatcher: [
