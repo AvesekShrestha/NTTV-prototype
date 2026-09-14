@@ -17,31 +17,54 @@ interface TeamPerformanceChartProps {
 }
 
 const TeamPerformanceChart = ({ tickets, teams }: TeamPerformanceChartProps) => {
-  const data = teams.map((team) => {
+  // Build per-team data; also bucket unassigned tickets under a synthetic "Unassigned" entry
+  const teamData = teams.map((team) => {
     const teamTickets = tickets.filter((t) => t.assignedTeamId === team.id);
     const resolved = teamTickets.filter((t) => t.status === "RESOLVED").length;
     return {
-      name: team.name,
+      name: team.name.length > 14 ? team.name.slice(0, 13) + "…" : team.name,
       Received: teamTickets.length,
       Resolved: resolved,
     };
   });
 
-  if (data.length === 0) {
+  // Tickets not yet assigned to any team
+  const unassignedTickets = tickets.filter((t) => !t.assignedTeamId);
+  if (unassignedTickets.length > 0) {
+    teamData.push({
+      name: "Unassigned",
+      Received: unassignedTickets.length,
+      Resolved: unassignedTickets.filter((t) => t.status === "RESOLVED").length,
+    });
+  }
+
+  const hasAnyData = teamData.some((d) => d.Received > 0 || d.Resolved > 0);
+
+  if (teamData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-sm text-slate-400">
-        No team data available.
+      <div className="flex flex-col items-center justify-center h-48 gap-2">
+        <p className="text-sm text-slate-400">No teams created yet.</p>
+        <p className="text-xs text-slate-300">Add teams to see performance data.</p>
+      </div>
+    );
+  }
+
+  if (!hasAnyData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-48 gap-2">
+        <p className="text-sm text-slate-400">No tickets assigned to any team yet.</p>
+        <p className="text-xs text-slate-300">Dispatch tickets to teams to see chart data.</p>
       </div>
     );
   }
 
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <BarChart data={data} barCategoryGap="30%" barGap={4}>
+      <BarChart data={teamData} barCategoryGap="30%" barGap={4}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
         <XAxis
           dataKey="name"
-          tick={{ fontSize: 12, fill: "#64748b" }}
+          tick={{ fontSize: 11, fill: "#64748b" }}
           axisLine={false}
           tickLine={false}
         />

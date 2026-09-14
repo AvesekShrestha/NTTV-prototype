@@ -106,7 +106,13 @@ const Reports = () => {
   const agentSummary = users
     .filter((u) => u.role === "agent")
     .map((agent) => {
-      const at = tickets.filter((t) => t.assignedTo === agent.id);
+      const at = tickets.filter(
+        (t) =>
+          t.assignedTo === agent.id ||
+          t.dispatches?.some((d) =>
+            d.recipients?.some((r) => r.agentId === agent.id)
+          )
+      );
       const res = at.filter((t) => t.status === "RESOLVED");
       return { name: agent.username, assigned: at.length, resolved: res.length };
     });
