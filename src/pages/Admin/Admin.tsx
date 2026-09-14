@@ -1,6 +1,6 @@
 import DashboardCard from "@/components/custom/DashboardCard";
 import TicketTable from "@/components/custom/TicketTable";
-import { User } from "lucide-react";
+import { CircleCheck, Tickets, User } from "lucide-react";
 import { useState } from "react";
 import { getTickets } from "@/lib/storage";
 
@@ -22,8 +22,8 @@ const Admin = () => {
       {/* Metric Cards Grid */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <DashboardCard title="Total Users" value={0} icon={User} />
-        <DashboardCard title="Active Tickets" value={0} icon={User} />
-        <DashboardCard title="Resolved Issues" value={0} icon={User} />
+        <DashboardCard title="Active Tickets" value={0} icon={Tickets} />
+        <DashboardCard title="Resolved Tickets" value={0} icon={CircleCheck} />
       </section>
 
       {/* Main Content Section */}
@@ -33,7 +33,7 @@ const Admin = () => {
             Recent Tickets
           </h2>
         </div>
-        <TicketTable tickets={tickets} />
+        <TicketTable tickets={tickets} role="ADMIN" />
       </section>
     </div>
   );

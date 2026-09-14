@@ -249,6 +249,10 @@ export default function TicketDetail() {
     !!currentUser &&
     assignedTeam.members?.includes(currentUser.id) === true;
 
+
+  const isTicketCreator =
+    currentUser?.id === ticket.createdBy && currentUser.role == "staff";
+
   const isAssignedAgent =
     isDirectlyAssignedAgent || isTeamMember;
 
@@ -274,7 +278,7 @@ export default function TicketDetail() {
    */
 
   const canStart =
-    isAssignedAgent &&
+    (isAssignedAgent || isTicketCreator) &&
     ["ASSIGNED", "FORWARDED", "ESCALATED"].includes(
       ticket.status
     );
@@ -306,7 +310,7 @@ export default function TicketDetail() {
    * Agent must start working before resolving.
    */
   const canResolve =
-    isAssignedAgent &&
+    (isAssignedAgent || isTicketCreator) &&
     ticket.status === "INPROCESS";
 
   /*
@@ -475,7 +479,7 @@ export default function TicketDetail() {
           Agent Actions
       ====================================================== */}
 
-      {isAssignedAgent && (
+      {(isAssignedAgent || isTicketCreator) && (
         <section className="flex flex-col gap-4 rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm">
 
           <div className="pb-4 border-b border-slate-100">
@@ -900,8 +904,8 @@ export default function TicketDetail() {
 
                             <ChevronDown
                               className={`w-4 h-4 shrink-0 text-slate-400 transition-transform ${isExpanded
-                                  ? "rotate-180"
-                                  : ""
+                                ? "rotate-180"
+                                : ""
                                 }`}
                             />
 

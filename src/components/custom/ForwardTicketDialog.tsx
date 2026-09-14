@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
-import { Forward, UserRound, Users } from "lucide-react";
+import {
+  CornerDownLeft,
+  Forward,
+  UserRound,
+  Users,
+} from "lucide-react";
 
 import {
   Dialog,
@@ -43,14 +48,14 @@ export default function ForwardTicketDialog({
 }: ForwardTicketDialogProps) {
   const [teamId, setTeamId] = useState("");
   const [agentId, setAgentId] = useState("");
+  const [forwardToCreator, setForwardToCreator] = useState(false);
 
   const currentLevel = ticket.level ?? "L1";
 
-  /**
-   * Forwarding keeps the ticket at its current level.
-   * Only teams belonging to the ticket's category and level
-   * are available.
-   */
+  const creator = useMemo(() => {
+    return users.find((user) => user.id === ticket.createdBy);
+  }, [users, ticket.createdBy]);
+
   const availableTeams = useMemo(() => {
     return teams.filter(
       (team) =>
@@ -59,9 +64,6 @@ export default function ForwardTicketDialog({
     );
   }, [teams, ticket.category, currentLevel]);
 
-  /**
-   * Agents are loaded from the selected team.
-   */
   const availableAgents = useMemo(() => {
     if (!teamId) return [];
 
@@ -82,37 +84,56 @@ export default function ForwardTicketDialog({
 
     setTeamId(newTeamId);
     setAgentId("");
+    setForwardToCreator(false);
   };
 
   const handleAgentChange = (value: string | null) => {
     setAgentId(value ?? "");
+    setForwardToCreator(false);
+  };
+
+  const handleCreatorChange = (value: string | null) => {
+    if (value === "creator") {
+      setForwardToCreator(true);
+      setTeamId("");
+      setAgentId("");
+    }
   };
 
   const handleClose = (value: boolean) => {
     if (!value) {
       setTeamId("");
       setAgentId("");
+      setForwardToCreator(false);
     }
 
     onOpenChange(value);
   };
 
   const handleSubmit = () => {
-    if (!teamId) return;
+    if (forwardToCreator) {
+      if (!creator) return;
 
-    onForward(
-      teamId,
-      agentId || undefined
-    );
+      onForward("", creator.id);
+    } else {
+      if (!teamId) return;
+
+      onForward(teamId, agentId || undefined);
+    }
 
     setTeamId("");
     setAgentId("");
+    setForwardToCreator(false);
     onOpenChange(false);
   };
 
+  const canSubmit =
+    (forwardToCreator && !!creator) ||
+    !!teamId;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-125">
+      <DialogContent className="w-full sm:max-w-125">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Forward className="h-5 w-5" />
@@ -120,14 +141,14 @@ export default function ForwardTicketDialog({
           </DialogTitle>
 
           <DialogDescription>
-            Forward this ticket to another team or a specific agent
-            within the current support level.
+            Forward this ticket to another team, a specific agent,
+            or back to the ticket creator.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
-          {/* Current level */}
-          <div className="rounded-lg border bg-muted/30 p-4">
+        <div className="w-full space-y-5 py-4">
+          {/* Current Level */}
+          <div className="w-full rounded-lg border bg-muted/30 p-4">
             <div className="text-sm font-medium">
               Current Support Level
             </div>
@@ -141,99 +162,143 @@ export default function ForwardTicketDialog({
             </div>
           </div>
 
-          {/* Team */}
-          <div className="space-y-2">
+          {/* Forward To */}
+          <div className="w-full space-y-2">
             <label className="text-sm font-medium">
-              Team
+              Forward To
             </label>
 
             <Select
-              value={teamId}
-              onValueChange={handleTeamChange}
+              value={
+                forwardToCreator
+                  ? "creator"
+                  : teamId
+                    ? teamId
+                    : ""
+              }
+              onValueChange={(value) => {
+                if (value === "creator") {
+                  handleCreatorChange(value);
+                } else {
+                  handleTeamChange(value);
+                }
+              }}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a team" />
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select forwarding destination" />
               </SelectTrigger>
 
               <SelectContent>
-                {availableTeams.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">
-                    No teams available at {currentLevel}
-                  </div>
-                ) : (
-                  availableTeams.map((team) => (
-                    <SelectItem
-                      key={team.id}
-                      value={team.id}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        {team.name}
+                {/* Ticket Creator */}
+                {creator && (
+                  <SelectItem value="creator">
+                    <div className="flex items-center gap-2">
+                      <CornerDownLeft className="h-4 w-4" />
+
+                      <div className="flex flex-col">
+                        <span>{creator.username}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Ticket Creator
+                        </span>
                       </div>
-                    </SelectItem>
-                  ))
+                    </div>
+                  </SelectItem>
+                )}
+
+                {/* Teams */}
+                {availableTeams.map((team) => (
+                  <SelectItem
+                    key={team.id}
+                    value={team.id}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      {team.name}
+                    </div>
+                  </SelectItem>
+                ))}
+
+                {availableTeams.length === 0 && !creator && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    No forwarding destinations available
+                  </div>
                 )}
               </SelectContent>
             </Select>
           </div>
 
           {/* Agent */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Agent{" "}
-              <span className="font-normal text-muted-foreground">
-                (optional)
-              </span>
-            </label>
+          {!forwardToCreator && (
+            <div className="w-full space-y-2">
+              <label className="text-sm font-medium">
+                Agent{" "}
+                <span className="font-normal text-muted-foreground">
+                  (optional)
+                </span>
+              </label>
 
-            <Select
-              value={agentId}
-              onValueChange={handleAgentChange}
-              disabled={!teamId}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={
-                    teamId
-                      ? "Select an agent or leave unassigned"
-                      : "Select a team first"
-                  }
-                />
-              </SelectTrigger>
+              <Select
+                value={agentId}
+                onValueChange={handleAgentChange}
+                disabled={!teamId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      teamId
+                        ? "Select an agent or leave unassigned"
+                        : "Select a team first"
+                    }
+                  />
+                </SelectTrigger>
 
-              <SelectContent>
-                {availableAgents.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">
-                    No agents available
-                  </div>
-                ) : (
-                  availableAgents.map((agent) => (
-                    <SelectItem
-                      key={agent.id}
-                      value={agent.id}
-                    >
-                      <div className="flex items-center gap-2">
-                        <UserRound className="h-4 w-4" />
-                        {agent.username}
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+                <SelectContent>
+                  {availableAgents.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      No agents available
+                    </div>
+                  ) : (
+                    availableAgents.map((agent) => (
+                      <SelectItem
+                        key={agent.id}
+                        value={agent.id}
+                      >
+                        <div className="flex items-center gap-2">
+                          <UserRound className="h-4 w-4" />
+                          {agent.username}
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Information */}
-          <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-            {agentId ? (
+          <div className="w-full rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+            {forwardToCreator ? (
+              <>
+                This ticket will be forwarded back to{" "}
+                <span className="font-medium text-foreground">
+                  {creator?.username}
+                </span>
+                , the original ticket creator.
+              </>
+            ) : agentId ? (
               <>
                 The ticket will be forwarded directly to the
                 selected agent.
               </>
-            ) : (
+            ) : teamId ? (
               <>
                 The ticket will be forwarded to the selected team.
                 All members of that team will receive the ticket.
+              </>
+            ) : (
+              <>
+                Select a team or forward the ticket back to its
+                original creator.
               </>
             )}
           </div>
@@ -248,7 +313,7 @@ export default function ForwardTicketDialog({
           </Button>
 
           <Button
-            disabled={!teamId}
+            disabled={!canSubmit}
             onClick={handleSubmit}
           >
             <Forward className="mr-2 h-4 w-4" />
