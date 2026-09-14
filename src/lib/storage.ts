@@ -171,7 +171,44 @@ export const getTickets = (): Ticket[] => {
 
   if (!data) return [];
 
-  return JSON.parse(data);
+  try {
+    const tickets = JSON.parse(data);
+
+    return tickets.map((ticket: Ticket) => ({
+      ...ticket,
+
+      createdAt: new Date(ticket.createdAt),
+      updatedAt: new Date(ticket.updatedAt),
+
+      resolvedAt: ticket.resolvedAt
+        ? new Date(ticket.resolvedAt)
+        : undefined,
+
+      activities: (ticket.activities ?? []).map(
+        (activity) => ({
+          ...activity,
+          timestamp: new Date(activity.timestamp),
+        })
+      ),
+
+      dispatches: (ticket.dispatches ?? []).map(
+        (dispatch) => ({
+          ...dispatch,
+          dispatchedAt: new Date(dispatch.dispatchedAt),
+
+          recipients: (dispatch.recipients ?? []).map(
+            (recipient) => ({
+              ...recipient,
+              receivedAt: new Date(recipient.receivedAt),
+            })
+          ),
+        })
+      ),
+    }));
+  } catch (error) {
+    console.error("Failed to parse tickets:", error);
+    return [];
+  }
 };
 
 export const saveTickets = (tickets: Ticket[]) => {
@@ -183,7 +220,9 @@ export const getTicket = (
 ): Ticket | undefined => {
   const tickets = getTickets();
 
-  return tickets.find((ticket) => ticket.id === ticketId);
+  return tickets.find(
+    (ticket) => ticket.id === ticketId
+  );
 };
 
 export const addTicket = (ticket: Ticket) => {
@@ -200,12 +239,14 @@ export const updateTicket = (
 ) => {
   const tickets = getTickets();
 
+  const now = new Date();
+
   const updatedTickets = tickets.map((ticket) =>
     ticket.id === ticketId
       ? {
         ...ticket,
         ...updates,
-        updatedAt: new Date(),
+        updatedAt: now,
       }
       : ticket
   );
@@ -223,6 +264,7 @@ export const removeTicket = (ticketId: string) => {
   saveTickets(updatedTickets);
 };
 
+
 // Activities
 
 export const addTicketActivity = (
@@ -231,15 +273,19 @@ export const addTicketActivity = (
 ) => {
   const tickets = getTickets();
 
+  const now = new Date();
+
   const updatedTickets = tickets.map((ticket) =>
     ticket.id === ticketId
       ? {
         ...ticket,
+
         activities: [
-          ...ticket.activities,
+          ...(ticket.activities ?? []),
           activity,
         ],
-        updatedAt: new Date(),
+
+        updatedAt: now,
       }
       : ticket
   );
@@ -254,6 +300,7 @@ export const getTicketActivities = (
 
   return ticket?.activities ?? [];
 };
+
 
 // Dispatch
 
@@ -271,15 +318,30 @@ export const dispatchTicket = (
   if (!ticket) return;
 
   const now = new Date();
-
-  // Resolve selected teams into individual agents
   const teams = getTeams();
 
   const agentIds = new Set<string>();
 
+  let assignedTeamId: string | undefined;
+  let assignedTo: string | undefined;
+  let level = ticket.level;
+
   targets.forEach((target) => {
     if (target.type === "AGENT") {
       agentIds.add(target.agentId);
+
+      assignedTo = target.agentId;
+
+      // Find the team containing this agent
+      const agentTeam = teams.find((team) =>
+        team.members?.includes(target.agentId)
+      );
+
+      if (agentTeam) {
+        assignedTeamId = agentTeam.id;
+        level = agentTeam.level;
+      }
+
       return;
     }
 
@@ -287,18 +349,22 @@ export const dispatchTicket = (
       (team) => team.id === target.teamId
     );
 
-    team?.members?.forEach((memberId) => {
-      agentIds.add(memberId);
-    });
+    if (team) {
+      assignedTeamId = team.id;
+      level = team.level;
+
+      team.members?.forEach((memberId) => {
+        agentIds.add(memberId);
+      });
+    }
   });
 
-  const recipients: TicketRecipient[] = Array.from(
-    agentIds
-  ).map((agentId) => ({
-    id: crypto.randomUUID(),
-    agentId,
-    receivedAt: now,
-  }));
+  const recipients: TicketRecipient[] =
+    Array.from(agentIds).map((agentId) => ({
+      id: crypto.randomUUID(),
+      agentId,
+      receivedAt: now,
+    }));
 
   const dispatch: TicketDispatch = {
     id: crypto.randomUUID(),
@@ -313,21 +379,39 @@ export const dispatchTicket = (
     type: "DISPATCHED",
     performedBy: dispatchedBy,
     timestamp: now,
+
+    fromLevel: ticket.level,
+    toLevel: level,
+
+    fromTeamId: ticket.assignedTeamId,
+    toTeamId: assignedTeamId,
+
+    fromUserId: ticket.assignedTo,
+    toUserId: assignedTo,
   };
 
   const updatedTickets = tickets.map((ticket) =>
     ticket.id === ticketId
       ? {
         ...ticket,
+
         status: "ASSIGNED" as TicketStatus,
+
+        // THIS IS THE IMPORTANT PART
+        assignedTeamId,
+        assignedTo,
+        level,
+
         dispatches: [
-          ...ticket.dispatches,
+          ...(ticket.dispatches ?? []),
           dispatch,
         ],
+
         activities: [
-          ...ticket.activities,
+          ...(ticket.activities ?? []),
           activity,
         ],
+
         updatedAt: now,
       }
       : ticket
@@ -335,6 +419,7 @@ export const dispatchTicket = (
 
   saveTickets(updatedTickets);
 };
+
 
 // Forward
 
@@ -409,17 +494,19 @@ export const forwardTicket = (
     ticket.id === ticketId
       ? {
         ...ticket,
+
         status: "FORWARDED" as TicketStatus,
+
         assignedTeamId: toTeamId,
         assignedTo: toUserId,
 
         dispatches: [
-          ...ticket.dispatches,
+          ...(ticket.dispatches ?? []),
           dispatch,
         ],
 
         activities: [
-          ...ticket.activities,
+          ...(ticket.activities ?? []),
           activity,
         ],
 
@@ -430,6 +517,7 @@ export const forwardTicket = (
 
   saveTickets(updatedTickets);
 };
+
 
 // Escalate
 
@@ -471,15 +559,18 @@ export const escalateTicket = (
       },
     ];
 
-  const recipients: TicketRecipient[] = targetTeam.members
-    ?.filter((memberId) =>
-      toUserId ? memberId === toUserId : true
-    )
-    .map((agentId) => ({
-      id: crypto.randomUUID(),
-      agentId,
-      receivedAt: now,
-    })) ?? [];
+  const recipients: TicketRecipient[] =
+    targetTeam.members
+      ?.filter((memberId) =>
+        toUserId
+          ? memberId === toUserId
+          : true
+      )
+      .map((agentId) => ({
+        id: crypto.randomUUID(),
+        agentId,
+        receivedAt: now,
+      })) ?? [];
 
   const dispatch: TicketDispatch = {
     id: crypto.randomUUID(),
@@ -517,12 +608,12 @@ export const escalateTicket = (
         assignedTo: toUserId,
 
         dispatches: [
-          ...ticket.dispatches,
+          ...(ticket.dispatches ?? []),
           dispatch,
         ],
 
         activities: [
-          ...ticket.activities,
+          ...(ticket.activities ?? []),
           activity,
         ],
 
@@ -533,6 +624,7 @@ export const escalateTicket = (
 
   saveTickets(updatedTickets);
 };
+
 
 // Start Ticket
 
@@ -561,11 +653,14 @@ export const startTicket = (
     ticket.id === ticketId
       ? {
         ...ticket,
+
         status: "INPROCESS" as TicketStatus,
+
         activities: [
-          ...ticket.activities,
+          ...(ticket.activities ?? []),
           activity,
         ],
+
         updatedAt: now,
       }
       : ticket
@@ -573,6 +668,7 @@ export const startTicket = (
 
   saveTickets(updatedTickets);
 };
+
 
 // Resolve Ticket
 
@@ -601,11 +697,12 @@ export const resolveTicket = (
     ticket.id === ticketId
       ? {
         ...ticket,
+
         status: "RESOLVED" as TicketStatus,
         resolvedAt: now,
 
         activities: [
-          ...ticket.activities,
+          ...(ticket.activities ?? []),
           activity,
         ],
 
@@ -616,6 +713,7 @@ export const resolveTicket = (
 
   saveTickets(updatedTickets);
 };
+
 
 // Reopen Ticket
 
@@ -644,11 +742,12 @@ export const reopenTicket = (
     ticket.id === ticketId
       ? {
         ...ticket,
+
         status: "NEW" as TicketStatus,
-        resolvedAt: undefined as unknown as Date,
+        resolvedAt: undefined,
 
         activities: [
-          ...ticket.activities,
+          ...(ticket.activities ?? []),
           activity,
         ],
 
@@ -659,6 +758,9 @@ export const reopenTicket = (
 
   saveTickets(updatedTickets);
 };
+
+
+// My Tickets
 
 export const getMyTickets = (): Ticket[] => {
   const currentUser = getCurrentUser();

@@ -10,6 +10,9 @@ import Agent from "./pages/Agent/Agent";
 import Staff from "./pages/Staff/Staff";
 import Tickets from "./pages/Staff/Tickets";
 import CreateTicketPage from "./pages/Staff/NewTicket";
+import TicketDetail from "./pages/Staff/TicketDetail";
+import Dispatcher from "./pages/Dispatcher/Dispatcher";
+import TicketDispatch from "./pages/Dispatcher/TicketDispatch";
 
 const App = () => {
   return (
@@ -25,7 +28,11 @@ const App = () => {
 
         <Route element={<Layout><Staff /></Layout>} path="/staff" />
         <Route element={<Layout><Tickets /></Layout>} path="/tickets" />
+        <Route element={<Layout><TicketDetail /></Layout>} path="/tickets/:ticketId" />
         <Route element={<Layout><CreateTicketPage /></Layout>} path="/newTicket" />
+
+        <Route element={<Layout><Dispatcher /></Layout>} path="/dispatcher" />
+        <Route element={<Layout><TicketDispatch /></Layout>} path="/ticket/dispatch/:ticketId" />
 
         <Route element={<Login />} path="/login" />
       </Routes>

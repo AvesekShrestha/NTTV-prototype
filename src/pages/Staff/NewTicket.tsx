@@ -154,6 +154,7 @@ export default function CreateTicketPage() {
       description: formData.description,
       priority: PRIORITY_MAP[formData.priority] || 'MEDIUM',
       status: 'NEW',
+      category: formData.category,
       createdBy: currentUser ? currentUser.id : '',
       activities: [],
       dispatches: [],

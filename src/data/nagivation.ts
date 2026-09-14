@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   Ticket,
   Users,
-  Forward,
   UserRound,
   UserGroup,
   FolderTree,
@@ -45,13 +44,8 @@ export const navigation: Record<UserRole, NavigationItem[]> = {
     },
     {
       title: "New Tickets",
-      url: "/tickets/new",
+      url: "/newTicket",
       icon: Ticket,
-    },
-    {
-      title: "Forwarded",
-      url: "/tickets/forwarded",
-      icon: Forward,
     },
     {
       title: "Teams",
@@ -84,11 +78,6 @@ export const navigation: Record<UserRole, NavigationItem[]> = {
       title: "Overview",
       url: "/agent",
       icon: LayoutDashboard,
-    },
-    {
-      title: "My Tickets",
-      url: "/tickets",
-      icon: Ticket,
     },
     {
       title: "Profile",

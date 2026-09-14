@@ -1,15 +1,49 @@
 import Searchbar from "@/components/custom/Searchbar";
 import TicketTable from "@/components/custom/TicketTable";
-import { getMyTickets } from "@/lib/storage";
+import { getCategories, getMyTickets } from "@/lib/storage";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Tickets = () => {
   const [tickets] = useState(() => getMyTickets())
+
   const [searchQuery, setSearchQuery] = useState("")
-  const [priority, setPriority] = useState("");
+  const [priority, setPriority] = useState("all");
+  const [category, setCategory] = useState("all");
+
   const navigate = useNavigate();
+
+  const filteredTickets = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return tickets.filter((ticket) => {
+      // Search
+      const matchesSearch =
+        !query ||
+        ticket.id.toLowerCase().includes(query) ||
+        ticket.title.toLowerCase().includes(query) ||
+        ticket.description.toLowerCase().includes(query);
+
+      // Priority
+      const matchesPriority =
+        priority === "all" ||
+        ticket.priority.toLowerCase() === priority.toLowerCase();
+
+      // Category
+      // ticket.category contains the category ID
+      const matchesCategory =
+        category === "all" ||
+        ticket.category === category;
+
+      return (
+        matchesSearch &&
+        matchesPriority &&
+        matchesCategory
+      );
+    });
+  }, [tickets, searchQuery, priority, category]);
+
   return (
     <>
       <div className="flex flex-col gap-8 p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
@@ -40,21 +74,35 @@ const Tickets = () => {
             searchPlaceholder="Search tickets..."
             filters={[
               {
-                key: 'priority',
+                key: "priority",
                 value: priority,
                 onChange: setPriority,
                 options: [
-                  { label: 'Priority', value: 'all' },
-                  { label: 'Critical', value: 'critical' },
-                  { label: 'High', value: 'high' },
-                  { label: 'Low', value: 'low' }
+                  { label: "Priority", value: "all" },
+                  { label: "Critical", value: "critical" },
+                  { label: "High", value: "high" },
+                  { label: "Medium", value: "medium" },
+                  { label: "Low", value: "low" },
+                ],
+              },
+              {
+                key: "category",
+                value: category,
+                onChange: setCategory,
+                options: [
+                  { label: "Categories", value: "all" },
+
+                  ...getCategories().map((cat) => ({
+                    label: cat.name,
+                    value: cat.id,
+                  })),
                 ],
               },
             ]}
           />
         </section>
 
-        <TicketTable tickets={tickets} />
+        <TicketTable tickets={filteredTickets} role="STAFF" />
       </div>
     </>
   )

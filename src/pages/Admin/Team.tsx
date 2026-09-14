@@ -3,7 +3,7 @@ import { Users, Shield, Layers } from "lucide-react";
 import Searchbar from "@/components/custom/Searchbar";
 import DashboardCard from "@/components/custom/DashboardCard";
 import type { Team } from "@/types/team";
-import { getCategories, getTeams, removeTeam } from "@/lib/storage";
+import { getCategories, getCurrentUser, getTeams, removeTeam } from "@/lib/storage";
 import AddTeamDialog from "@/components/custom/AddTeamDialog";
 import TeamTable from "@/components/custom/TeamTable";
 
@@ -55,10 +55,14 @@ export default function Teams() {
           </p>
         </div>
 
-        <AddTeamDialog
-          categories={categories}
-          onTeamCreated={handleTeamCreated}
-        />
+        {
+          getCurrentUser()?.role == "admin" &&
+          <AddTeamDialog
+            categories={categories}
+            onTeamCreated={handleTeamCreated}
+          />
+
+        }
       </div>
 
       {/* Metric Cards Grid */}

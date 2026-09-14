@@ -11,8 +11,9 @@ export type Ticket = {
   description: string,
   priority: TicketPriority,
   status: TicketStatus,
-  createdBy: string,
+  category: string,
 
+  createdBy: string
   level?: TeamLevel,
   assignedTeamId?: string,
   assignedTo?: string,
