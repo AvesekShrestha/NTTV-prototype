@@ -59,6 +59,26 @@ const Reports = () => {
   const getTeamName = (id?: string) =>
     id ? (teams.find((t) => t.id === id)?.name ?? id) : "—";
 
+  // If ticket.assignedTo is set use that; otherwise collect all unique agents
+  // from the latest dispatch's recipients (team dispatch case).
+  const getAssignedAgentsLabel = (t: (typeof tickets)[0]): string => {
+    if (t.assignedTo) return getUsername(t.assignedTo);
+    const lastDispatch = t.dispatches?.at(-1);
+    if (!lastDispatch?.recipients?.length) return "—";
+    const names = [...new Set(lastDispatch.recipients.map((r) => getUsername(r.agentId)))];
+    return names.join(", ");
+  };
+
+  // If ticket.assignedTeamId is set use that; otherwise derive from assignedTo's team.
+  const getResolvedTeamName = (t: (typeof tickets)[0]): string => {
+    if (t.assignedTeamId) return getTeamName(t.assignedTeamId);
+    if (t.assignedTo) {
+      const team = teams.find((tm) => tm.members?.includes(t.assignedTo!));
+      return team ? team.name : "—";
+    }
+    return "—";
+  };
+
   // ── filtered tickets for detailed tab ──────────────────────────────────────
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
@@ -161,8 +181,8 @@ const Reports = () => {
       t.priority,
       getCategoryName(t.category),
       getUsername(t.createdBy),
-      getUsername(t.assignedTo),
-      getTeamName(t.assignedTeamId),
+      getAssignedAgentsLabel(t),
+      getResolvedTeamName(t),
       t.level ?? "—",
       new Date(t.createdAt).toLocaleString(),
       new Date(t.updatedAt).toLocaleString(),
@@ -354,8 +374,8 @@ const Reports = () => {
           ["ID", t.id],
           ["Category", getCategoryName(t.category)],
           ["Created By", getUsername(t.createdBy)],
-          ["Assigned To", getUsername(t.assignedTo) ],
-          ["Team", getTeamName(t.assignedTeamId)],
+          ["Assigned To", getAssignedAgentsLabel(t)],
+          ["Team", getResolvedTeamName(t)],
           ["Level", t.level ?? "—"],
           ["Created At", new Date(t.createdAt).toLocaleString()],
           ["Updated At", new Date(t.updatedAt).toLocaleString()],
@@ -754,8 +774,8 @@ const Reports = () => {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-slate-600">{getCategoryName(t.category)}</td>
-                          <td className="px-4 py-3 text-slate-600">{getUsername(t.assignedTo)}</td>
-                          <td className="px-4 py-3 text-slate-600">{getTeamName(t.assignedTeamId)}</td>
+                          <td className="px-4 py-3 text-slate-600">{getAssignedAgentsLabel(t)}</td>
+                          <td className="px-4 py-3 text-slate-600">{getResolvedTeamName(t)}</td>
                           <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{new Date(t.createdAt).toLocaleDateString()}</td>
                           <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
                             {t.resolvedAt ? new Date(t.resolvedAt).toLocaleDateString() : "—"}

@@ -28,16 +28,6 @@ const TeamPerformanceChart = ({ tickets, teams }: TeamPerformanceChartProps) => 
     };
   });
 
-  // Tickets not yet assigned to any team
-  const unassignedTickets = tickets.filter((t) => !t.assignedTeamId);
-  if (unassignedTickets.length > 0) {
-    teamData.push({
-      name: "Unassigned",
-      Received: unassignedTickets.length,
-      Resolved: unassignedTickets.filter((t) => t.status === "RESOLVED").length,
-    });
-  }
-
   const hasAnyData = teamData.some((d) => d.Received > 0 || d.Resolved > 0);
 
   if (teamData.length === 0) {
